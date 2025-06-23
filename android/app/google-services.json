@@ -1,0 +1,83 @@
+{
+  "project_info": {
+    "project_number": "1097935473525",
+    "firebase_url": "https://capacitaciones-1adfd-default-rtdb.firebaseio.com",
+    "project_id": "capacitaciones-1adfd",
+    "storage_bucket": "capacitaciones-1adfd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1097935473525:android:96fad1836a1e3de3dd213c",
+        "android_client_info": {
+          "package_name": "com.example.capacitaciones"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1097935473525-naqco4du80duib0tnnhurg47ukp3j1j7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDF9KhjzisvmE-NBraR6svcY_QYmGupRcg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1097935473525-naqco4du80duib0tnnhurg47ukp3j1j7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1097935473525-bm8pmcjs3e95dag55fr09npfidit2gs2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.capacitaciones"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1097935473525:android:797c366d5e23cf4ddd213c",
+        "android_client_info": {
+          "package_name": "com.example.myapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1097935473525-naqco4du80duib0tnnhurg47ukp3j1j7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDF9KhjzisvmE-NBraR6svcY_QYmGupRcg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1097935473525-naqco4du80duib0tnnhurg47ukp3j1j7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1097935473525-bm8pmcjs3e95dag55fr09npfidit2gs2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.capacitaciones"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
