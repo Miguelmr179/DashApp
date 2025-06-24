@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:dashapp/General/agregar%20foto%20por%20usuario.dart';
 import 'package:dashapp/General/agregar_Noticias.dart';
+import 'package:dashapp/Huellas/Vistas/editarCarrusel.dart';
 import 'package:dashapp/Utileria/global_exports.dart';
 import 'package:intl/intl.dart';
 import 'manager/manage_global_progress_screen.dart';
@@ -140,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         automaticallyImplyLeading: true,
         title: const Text(
-          'CapacitacionesDCC',
+          'Bienvenido',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -355,8 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Expanded(
                                 flex: 3,
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     _seccionTitulo('📰 Anuncios'),
                                     SizedBox(
@@ -378,6 +378,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Align(
                                       alignment: Alignment.center,
                                       child: Text(
+                                        '🎂 Cumpleaños de hoy',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Container(
+                                      constraints: const BoxConstraints(
+                                        minHeight: 400,
+                                      ),
+                                      child: _buildCumpleaniosDelDia(),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    Align(
+                                      alignment: Alignment.center,
+                                      child: Text(
                                         '🎂 Cumpleaños del mes',
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
@@ -386,10 +405,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(height: 12),
+                                    const SizedBox(height: 10),
                                     Container(
-                                      constraints: const BoxConstraints(minHeight: 400),
-                                      child: _buildCumpleanios(),
+                                      constraints: const BoxConstraints(
+                                        minHeight: 400,
+                                      ),
+                                      child: _buildCumpleaniosMes(),
                                     ),
                                   ],
                                 ),
@@ -399,14 +420,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           : Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              const SizedBox(height: 16),
                               _seccionTitulo('📰 Anuncios'),
                               SizedBox(
                                 height: 400,
                                 child: _buildCarruselAnuncios(),
                               ),
                               const SizedBox(height: 24),
+                              _seccionTitulo('🎂 Cumpleaños de hoy'),
+                              _buildCumpleaniosDelDia(),
+                              const SizedBox(height: 24),
                               _seccionTitulo('🎂 Cumpleaños del mes'),
-                              _buildCumpleanios(),
+                              _buildCumpleaniosMes(),
                               const SizedBox(height: 24),
                               _seccionTitulo('📅 Próximos eventos'),
                               _buildEventos(),
@@ -421,7 +446,137 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCumpleanios() {
+  Widget _buildCumpleaniosDelDia() {
+    final hoy = DateTime.now();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('Usuarios').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final cumpleanierosHoy =
+            snapshot.data?.docs.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final cumpleStr = data['fechaNac'] ?? '';
+              if (cumpleStr.isEmpty) return false;
+
+              try {
+                final cumple = DateFormat(
+                  "yyyy-MM-dd",
+                  "es_MX",
+                ).parseStrict(cumpleStr);
+                return cumple.day == hoy.day && cumple.month == hoy.month;
+              } catch (_) {
+                return false;
+              }
+            }).toList();
+
+        if (cumpleanierosHoy == null || cumpleanierosHoy.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(24),
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Center(
+              child: Text(
+                '🎂 Hoy no hay cumpleaños',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black54,
+                ),
+              ),
+            ),
+          );
+        }
+
+        return CarouselSlider.builder(
+          itemCount: cumpleanierosHoy.length,
+          options: CarouselOptions(
+            height: 280,
+            enlargeCenterPage: true,
+            enableInfiniteScroll: cumpleanierosHoy.length > 1,
+            autoPlay: cumpleanierosHoy.length > 1,
+            autoPlayInterval: const Duration(seconds: 5),
+          ),
+          itemBuilder: (context, index, realIndex) {
+            final doc = cumpleanierosHoy[index];
+            final data = doc.data() as Map<String, dynamic>;
+            final nombre = data['nombre'] ?? 'Sin nombre';
+            final foto = data['foto'] ?? '';
+
+            return Container(
+              width: 240,
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF8EC5FC), Color(0xFFE0C3FC)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.white,
+                    backgroundImage:
+                        (foto != null && foto.toString().isNotEmpty)
+                            ? NetworkImage(foto)
+                            : null,
+                    child:
+                        (foto == null || foto.toString().isEmpty)
+                            ? const Icon(
+                              Icons.person,
+                              color: Colors.grey,
+                              size: 40,
+                            )
+                            : null,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    nombre,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '🎉 ¡Feliz cumpleaños!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black54,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCumpleaniosMes() {
     final hoy = DateTime.now();
     final mesActual = hoy.month;
 
@@ -432,22 +587,46 @@ class _HomeScreenState extends State<HomeScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final cumpleanieros = snapshot.data?.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          final cumpleStr = data['fechaIng'] ?? '';
-          if (cumpleStr.isEmpty) return false;
+        final cumpleanieros =
+            snapshot.data?.docs.where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final cumpleStr = data['fechaNac'] ?? '';
+              if (cumpleStr.isEmpty) return false;
 
-          try {
-            final cumple = DateFormat("d MMMM yyyy", "es_MX").parseLoose(cumpleStr);
-            return cumple.month == mesActual;
-          } catch (e) {
-            return false;
-          }
-        }).toList();
+              try {
+                final cumple = DateFormat(
+                  "yyyy-MM-dd",
+                  "es_MX",
+                ).parseStrict(cumpleStr);
+                return cumple.month == mesActual;
+              } catch (_) {
+                return false;
+              }
+            }).toList();
 
         if (cumpleanieros == null || cumpleanieros.isEmpty) {
           return const Center(child: Text('No hay cumpleaños este mes.'));
         }
+
+        // Ordenar por día del mes
+        cumpleanieros.sort((a, b) {
+          final dataA = a.data() as Map<String, dynamic>;
+          final dataB = b.data() as Map<String, dynamic>;
+
+          try {
+            final fechaA = DateFormat(
+              "yyyy-MM-dd",
+              "es_MX",
+            ).parseStrict(dataA['fechaNac']);
+            final fechaB = DateFormat(
+              "yyyy-MM-dd",
+              "es_MX",
+            ).parseStrict(dataB['fechaNac']);
+            return fechaA.day.compareTo(fechaB.day);
+          } catch (_) {
+            return 0;
+          }
+        });
 
         return ListView.builder(
           shrinkWrap: true,
@@ -457,11 +636,14 @@ class _HomeScreenState extends State<HomeScreen> {
             final doc = cumpleanieros[index];
             final data = doc.data() as Map<String, dynamic>;
             final nombre = data['nombre'] ?? 'Sin nombre';
-            final cumpleStr = data['fechaIng'] ?? '';
+            final cumpleStr = data['fechaNac'] ?? '';
 
             String fechaStr = 'Sin fecha';
             try {
-              final cumple = DateFormat("d MMMM yyyy", "es_MX").parseLoose(cumpleStr);
+              final cumple = DateFormat(
+                "yyyy-MM-dd",
+                "es_MX",
+              ).parseStrict(cumpleStr);
               fechaStr = DateFormat('dd MMMM', 'es_MX').format(cumple);
             } catch (_) {}
 
@@ -480,22 +662,37 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 16,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
+                      width: 56,
+                      height: 56,
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade400,
                         shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                        image: DecorationImage(
+                          image: NetworkImage(data['foto'] ?? ''),
+                          fit: BoxFit.cover,
+                          onError: (exception, stackTrace) {},
+                        ),
+                        color: Colors.grey.shade300,
                       ),
-                      padding: const EdgeInsets.all(12),
-                      child: const Icon(
-                        Icons.cake,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                      child:
+                          data['foto'] == null ||
+                                  data['foto'].toString().isEmpty
+                              ? const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                                size: 28,
+                              )
+                              : null,
                     ),
+
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
@@ -564,6 +761,136 @@ class _HomeScreenState extends State<HomeScreen> {
             }
 
             _lastPageCount = docs.length;
+
+            if (docs.length == 1) {
+              final data = docs.first.data() as Map<String, dynamic>;
+              final imagenUrl = data['imagenUrl'] as String?;
+              final titulo = data['titulo'] ?? 'Sin título';
+              final contenido = data['contenido'] ?? '';
+              final fecha = DateFormat(
+                'dd MMM yyyy • hh:mm a',
+                'es_MX',
+              ).format((data['timestamp'] as Timestamp).toDate());
+
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  height: 400,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      if (imagenUrl != null)
+                        Image.network(
+                          imagenUrl,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.fill,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value:
+                                    progress.expectedTotalBytes != null
+                                        ? progress.cumulativeBytesLoaded /
+                                            progress.expectedTotalBytes!
+                                        : null,
+                              ),
+                            );
+                          },
+                          errorBuilder:
+                              (_, __, ___) => Container(
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                        )
+                      else
+                        Container(color: Colors.grey[300]),
+
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.7),
+                            ],
+                            stops: const [0.5, 1.0],
+                          ),
+                        ),
+                      ),
+
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          margin: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                titulo,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  height: 1.2,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                contenido,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 16,
+                                  height: 1.4,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                fecha,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 14,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
 
             return CarouselSlider.builder(
               itemCount: docs.length,
@@ -720,14 +1047,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final hoy = DateTime.now();
     final hoyDesdeCero = DateTime(hoy.year, hoy.month, hoy.day);
 
-
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('eventos')
-          .where('fecha', isGreaterThanOrEqualTo: hoyDesdeCero)
-          .orderBy('fecha')
-          .limit(50)
-          .snapshots(),
+      stream:
+          FirebaseFirestore.instance
+              .collection('eventos')
+              .where('fecha', isGreaterThanOrEqualTo: hoyDesdeCero)
+              .orderBy('fecha')
+              .limit(50)
+              .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -760,7 +1087,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 final titulo = data['titulo'] ?? 'Evento';
                 final descripcion = data['descripcion'] ?? '';
                 final fecha = (data['fecha'] as Timestamp).toDate();
-                final fechaStr = DateFormat('dd MMM yyyy', 'es_MX').format(fecha);
+                final fechaStr = DateFormat(
+                  'dd MMM yyyy',
+                  'es_MX',
+                ).format(fecha);
 
                 return Container(
                   width: 280,
@@ -847,9 +1177,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
-
-
   Drawer _buildAdminDrawer() {
     final isDarkMode = themeNotifier.value == ThemeMode.dark;
     final drawerBackground = isDarkMode ? Colors.black : Colors.white;
@@ -857,195 +1184,240 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Drawer(
       backgroundColor: drawerBackground,
-      child: ListView(
-        padding: EdgeInsets.zero,
+      child: Column(
         children: [
-          Stack(
-            children: [
-              UserAccountsDrawerHeader(
-                accountName: Text(
-                  currentUser?.displayName ?? 'Administrador 👑',
-                ),
-                accountEmail: Text(currentUser?.email ?? ''),
-                currentAccountPicture: CircleAvatar(
-                  backgroundImage:
-                      currentUser?.photoURL != null
-                          ? NetworkImage(currentUser!.photoURL!)
-                          : const AssetImage('assets/ds.png') as ImageProvider,
-                ),
-                decoration: const BoxDecoration(color: Colors.blueAccent),
-              ),
-              Positioned(
-                bottom: 8,
-                right: 12,
-                child: IconButton(
-                  icon: const Icon(Icons.settings, color: Colors.white),
-                  tooltip: 'Configuración de Perfil',
-                  onPressed: () {
-                    Navigator.pop(context); // Cierra el Drawer
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const EditProfileScreen(),
+          // Sección principal (scrollable)
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                Stack(
+                  children: [
+                    UserAccountsDrawerHeader(
+                      accountName: Text(
+                        currentUser?.displayName ?? 'Administrador 👑',
                       ),
-                    );
-                  },
+                      accountEmail: Text(currentUser?.email ?? ''),
+                      currentAccountPicture: CircleAvatar(
+                        backgroundImage:
+                            currentUser?.photoURL != null
+                                ? NetworkImage(currentUser!.photoURL!)
+                                : const AssetImage('assets/ds.png')
+                                    as ImageProvider,
+                      ),
+                      decoration: const BoxDecoration(color: Colors.blueAccent),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      right: 12,
+                      child: IconButton(
+                        icon: const Icon(Icons.settings, color: Colors.white),
+                        tooltip: 'Configuración de Perfil',
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const EditProfileScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const Divider(),
-          _buildDrawerItem(Icons.home, 'Inicio', () {
-            setState(() {
-              _mostrarCursos = false;
-            });
-            Navigator.pop(context);
-          }, drawerTextColor),
-          _buildDrawerItem(Icons.post_add, 'Agregar anuncio', () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AgregarNoticiaScreen()),
-            );
-          }, drawerTextColor),
-          if (kIsWeb)
-            _buildDrawerItem(Icons.person_add, 'Agregar foto de usuario', () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const AdministrarFotosUsuariosScreen(),
-                ),
-              );
-            }, drawerTextColor),
-          _buildDrawerItem(Icons.post_add, 'Agregar eventos', () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const AgregarEventoScreen(),
-              ),
-            );
-          }, drawerTextColor),
-          const Divider(),
-
-          _buildDrawerItem(Icons.school, 'Capacitaciones', () {
-            setState(() {
-              _mostrarCursos = true;
-            });
-            Navigator.pop(context); // cierra el drawer
-          }, drawerTextColor),
-
-          const Divider(),
-
-          ExpansionTile(
-            leading: Icon(Icons.school, color: drawerTextColor),
-            title: Text(
-              'Administrar capacitaciones',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: drawerTextColor,
-              ),
-            ),
-            collapsedIconColor: drawerTextColor,
-            iconColor: drawerTextColor,
-            children: [
-              _buildDrawerItem(
-                Icons.manage_accounts,
-                'Administrar Áreas',
-                () => _navigate(const ManageAreasAndCoursesScreen()),
-                drawerTextColor,
-              ),
-              _buildDrawerItem(
-                Icons.video_collection,
-                'Contenido de Cursos',
-                () => _navigate(const AdminResourcesScreen()),
-                drawerTextColor,
-              ),
-              _buildDrawerItem(
-                Icons.settings_accessibility,
-                'Acceso a Cursos',
-                () => _navigate(const ManageCourseAccessScreen()),
-                drawerTextColor,
-              ),
-              _buildDrawerItem(
-                Icons.edit_document,
-                'Administrar Exámenes',
-                () => _navigate(const AdminExamManagerScreen()),
-                drawerTextColor,
-              ),
-              _buildDrawerItem(
-                Icons.assignment,
-                'Resultados de Exámenes',
-                () => _navigate(const ExamResultsScreen()),
-                drawerTextColor,
-              ),
-              _buildDrawerItem(
-                Icons.group,
-                'Progreso General',
-                () => _navigate(const GlobalProgressScreen()),
-                drawerTextColor,
-              ),
-              _buildDrawerItem(
-                Icons.supervisor_account,
-                'Gestionar Usuarios',
-                () => _navigate(const AdminManageUsersScreen()),
-                drawerTextColor,
-              ),
-              _buildDrawerItem(
-                Icons.description,
-                'Kardex',
-                () => _navigate(const CardexScreen()),
-                drawerTextColor,
-              ),
-            ],
-          ),
-          const Divider(),
-          ExpansionTile(
-            leading: Icon(Icons.fingerprint, color: drawerTextColor),
-            title: Text(
-              'Administrar Huellas',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: drawerTextColor,
-              ),
-            ),
-            collapsedIconColor: drawerTextColor,
-            iconColor: drawerTextColor,
-            children: [
-              _buildDrawerItem(
-                Icons.settings,
-                'Subir checadas pendientes',
-                () async {
-                  Navigator.push(
+                const Divider(),
+                _buildDrawerItem(Icons.home, 'Inicio', () {
+                  setState(() {
+                    _mostrarCursos = false;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+                const Divider(),
+                _buildDrawerItem(Icons.school, 'Capacitaciones', () {
+                  setState(() {
+                    _mostrarCursos = true;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+                const Divider(),
+                _buildDrawerItem(
+                  Icons.history,
+                  'Registros E/S',
+                  () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const ConfiguracionSubidasScreen(),
+                      builder: (_) => const ResumenChecadasScreen(),
                     ),
-                  );
-                },
-                drawerTextColor,
-              ),
-              _buildDrawerItem(
-                Icons.history,
-                'Registros de Checadas',
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ResumenChecadasScreen(),
                   ),
+                  drawerTextColor,
                 ),
-                drawerTextColor,
-              ),
-            ],
+                const Divider(),
+
+              ],
+            ),
           ),
+
           const Divider(),
-          _buildDrawerItem(
-            Icons.logout,
-            'Cerrar Sesión',
-            _logout,
-            drawerTextColor,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ExpansionTile(
+                  leading: Icon(Icons.settings, color: drawerTextColor),
+                  title: Text(
+                    'Configuración',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: drawerTextColor,
+                    ),
+                  ),
+                  collapsedIconColor: drawerTextColor,
+                  iconColor: drawerTextColor,
+                  children: [
+                    ExpansionTile(
+                      leading: Icon(Icons.school, color: drawerTextColor),
+                      title: Text(
+                        'Configuración de Capacitaciones',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: drawerTextColor,
+                        ),
+                      ),
+                      collapsedIconColor: drawerTextColor,
+                      iconColor: drawerTextColor,
+                      children: [
+                        _buildDrawerItem(
+                          Icons.manage_accounts,
+                          'Administrar áreas',
+                              () => _navigate(const ManageAreasAndCoursesScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.video_collection,
+                          'Contenido de cursos',
+                              () => _navigate(const AdminResourcesScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.settings_accessibility,
+                          'Acceso a cursos',
+                              () => _navigate(const ManageCourseAccessScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.edit_document,
+                          'Administrar exámenes',
+                              () => _navigate(const AdminExamManagerScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.assignment,
+                          'Resultados de exámenes',
+                              () => _navigate(const ExamResultsScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.group,
+                          'Progreso general',
+                              () => _navigate(const GlobalProgressScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.supervisor_account,
+                          'Gestionar usuarios',
+                              () => _navigate(const AdminManageUsersScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.description,
+                          'Kardex',
+                              () => _navigate(const CardexScreen()),
+                          drawerTextColor,
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    ExpansionTile(
+                      leading: Icon(Icons.home, color: drawerTextColor),
+                      title: Text(
+                        'Configuración inicio',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: drawerTextColor,
+                        ),
+                      ),
+                      collapsedIconColor: drawerTextColor,
+                      iconColor: drawerTextColor,
+                      children: [
+                        _buildDrawerItem(
+                          Icons.post_add,
+                          'Agregar anuncio',
+                              () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const AgregarNoticiaScreen()),
+                            );
+                          },
+                          drawerTextColor,
+                        ),
+                        if (kIsWeb)
+                          _buildDrawerItem(
+                            Icons.person_add,
+                            'Agregar foto de usuario',
+                                () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const AdministrarFotosUsuariosScreen(),
+                                ),
+                              );
+                            },
+                            drawerTextColor,
+                          ),
+                        _buildDrawerItem(
+                          Icons.post_add,
+                          'Agregar eventos',
+                              () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const AgregarEventoScreen()),
+                            );
+                          },
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.photo_library,
+                          'Editar carrusel comedor',
+                              () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const EditarCarruselComedorScreen()),
+                            );
+                          },
+                          drawerTextColor,
+                        ),
+
+                      ],
+                    ),
+                    const Divider(),
+                  ],
+                ),
+                const Divider(),
+                _buildDrawerItem(
+                  Icons.logout,
+                  'Cerrar Sesión',
+                  _logout,
+                  drawerTextColor,
+                ),
+              ],
+            ),
           ),
+
         ],
       ),
     );
@@ -1221,7 +1593,10 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     return ListTile(
       leading: Icon(icon, color: textColor),
-      title: Text(title, style: TextStyle(color: textColor)),
+      title: Text(
+        title,
+        style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+      ),
       onTap: onTap,
     );
   }

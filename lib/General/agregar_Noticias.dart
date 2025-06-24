@@ -1,7 +1,6 @@
 /*
-Version WEB
-
-* import 'package:cloud_firestore/cloud_firestore.dart';
+//Version WEB
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:html' as html;
 import 'dart:typed_data';
@@ -388,9 +387,9 @@ class _AgregarNoticiaScreenState extends State<AgregarNoticiaScreen> {
     );
   }
 }
-*/ */
+*/*/
 
-
+//Version MOVIL
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -767,3 +766,4 @@ class _AgregarNoticiaScreenState extends State<AgregarNoticiaScreen> {
     );
   }
 }
+

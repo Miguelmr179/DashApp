@@ -19,23 +19,21 @@ class RelojCOM extends StatefulWidget {
 class _RelojCOMState extends State<RelojCOM> {
   final TextEditingController _numberController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final CheckinService _checkinService = CheckinService();
 
   late String _horaActual;
   late String _fechaActual;
   late Timer _timer;
   late StreamSubscription _connectivitySubscription;
+  late StreamSubscription<QuerySnapshot> _carruselSubscription;
+
+  bool _cargandoCarrusel = true;
   bool _offline = false;
   bool _campoBloqueado = false;
   String? _tipoForzado;
   Timer? _desbloqueoTimer;
 
-  final CheckinService _checkinService = CheckinService();
-
-  final List<String> _carouselImages = [
-    'assets/1.png',
-    'assets/2.png',
-    'assets/3.png',
-  ];
+  List<String> _carouselImagesFirebase = [];
 
   @override
   void initState() {
@@ -48,6 +46,7 @@ class _RelojCOMState extends State<RelojCOM> {
 
     _focusNode.requestFocus();
     _cargarUsuariosLocales();
+    _escucharCambiosCarrusel();
 
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
       result,
@@ -66,41 +65,17 @@ class _RelojCOMState extends State<RelojCOM> {
     );
   }
 
-  Future<void> _cargarUsuariosLocales() async {
-    final prefs = await SharedPreferences.getInstance();
-    final usuariosSnapshot =
-        await FirebaseFirestore.instance.collection('Usuarios').get();
-
-    final listaActualRaw = prefs.getStringList('usuarios_locales') ?? [];
-    final listaActual =
-        listaActualRaw
-            .map((e) => jsonDecode(e))
-            .whereType<Map<String, dynamic>>()
-            .toList();
-
-    final nuevaLista = <Map<String, dynamic>>[];
-
-    for (final doc in usuariosSnapshot.docs) {
-      final titulo = doc['Título'];
-      final nombre = doc['nombre'] ?? '';
-
-      // Busca si ya estaba antes
-      final existente = listaActual.firstWhere(
-        (u) => u['titulo'] == titulo,
-        orElse: () => {},
-      );
-
-      nuevaLista.add({
-        'titulo': titulo,
-        'nombre': nombre,
-        'foto': existente['foto'],
-        'foto_local': existente['foto_local'],
-      });
-    }
-
-    final jsonList = nuevaLista.map(jsonEncode).toList();
-    await prefs.setStringList('usuarios_locales', jsonList);
+  @override
+  void dispose() {
+    _timer.cancel();
+    _desbloqueoTimer?.cancel();
+    _numberController.dispose();
+    _focusNode.dispose();
+    _connectivitySubscription.cancel();
+    super.dispose();
+    _carruselSubscription.cancel();
   }
+
 
   bool _esHorarioValido() {
     final now = DateTime.now();
@@ -137,7 +112,7 @@ class _RelojCOMState extends State<RelojCOM> {
   String _obtenerTipoSalida() {
     if (_tipoForzado != null) return _tipoForzado!;
     final hora = DateTime.now().hour;
-    //Agregar que los ciernes
+    //Agregar condicion de viernes y fin de semana
     if ((hora >= 6 && hora < 8) || (hora >= 16 && hora < 20)) {
       return 'salida_planta';
     } else {
@@ -145,13 +120,40 @@ class _RelojCOMState extends State<RelojCOM> {
     }
   }
 
-  void _actualizarFechaHora() {
-    final now = DateTime.now();
-    setState(() {
-      _horaActual = DateFormat('hh:mm:ss a').format(now);
-      _fechaActual = DateFormat('dd MMMM yyyy', 'es_MX').format(now);
-      _campoBloqueado = !_esHorarioValido() && _tipoForzado == null;
-    });
+  Future<void> _cargarUsuariosLocales() async {
+    final prefs = await SharedPreferences.getInstance();
+    final usuariosSnapshot =
+        await FirebaseFirestore.instance.collection('Usuarios').get();
+
+    final listaActualRaw = prefs.getStringList('usuarios_locales') ?? [];
+    final listaActual =
+        listaActualRaw
+            .map((e) => jsonDecode(e))
+            .whereType<Map<String, dynamic>>()
+            .toList();
+
+    final nuevaLista = <Map<String, dynamic>>[];
+
+    for (final doc in usuariosSnapshot.docs) {
+      final titulo = doc['Título'];
+      final nombre = doc['nombre'] ?? '';
+
+      // Busca si ya estaba antes
+      final existente = listaActual.firstWhere(
+        (u) => u['titulo'] == titulo,
+        orElse: () => {},
+      );
+
+      nuevaLista.add({
+        'titulo': titulo,
+        'nombre': nombre,
+        'foto': existente['foto'],
+        'foto_local': existente['foto_local'],
+      });
+    }
+
+    final jsonList = nuevaLista.map(jsonEncode).toList();
+    await prefs.setStringList('usuarios_locales', jsonList);
   }
 
   Future<void> _desbloquearManual() async {
@@ -237,35 +239,98 @@ class _RelojCOMState extends State<RelojCOM> {
     });
   }
 
+  void _actualizarFechaHora() {
+    final now = DateTime.now();
+    setState(() {
+      _horaActual = DateFormat('hh:mm:ss a').format(now);
+      _fechaActual = DateFormat('dd MMMM yyyy', 'es_MX').format(now);
+      _campoBloqueado = !_esHorarioValido() && _tipoForzado == null;
+    });
+  }
+
+  void _escucharCambiosCarrusel() {
+    _carruselSubscription = FirebaseFirestore.instance
+        .collection('carrusel_comedor')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+      setState(() {
+        _carouselImagesFirebase = snapshot.docs
+            .map((doc) => doc['imagenUrl'] as String)
+            .toList();
+        _cargandoCarrusel = false;
+      });
+    });
+  }
+
   void _mostrarAlertaDuplicado() {
     showDialog(
       context: context,
       builder:
           (_) => AlertDialog(
-            title: const Text('Registro duplicado'),
-            content: const Text(
-              'Ya se registró una salida de comedor recientemente.\n'
+        title: const Text('Registro duplicado'),
+        content: const Text(
+          'Ya se registró una salida de comedor recientemente.\n'
               'Debes esperar al menos 1 hora entre registros de este tipo.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Entendido'),
-              ),
-            ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Entendido'),
           ),
+        ],
+      ),
     );
   }
 
-  @override
-  void dispose() {
-    _timer.cancel();
-    _desbloqueoTimer?.cancel();
-    _numberController.dispose();
-    _focusNode.dispose();
-    _connectivitySubscription.cancel();
-    super.dispose();
+  Widget _buildCarruselComedor() {
+    if (_carouselImagesFirebase.isEmpty) {
+      return const Center(
+        child: Text(
+          'No hay imágenes disponibles',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
+    }
+
+    if (_carouselImagesFirebase.length == 1) {
+      // Solo una imagen: mostrar estática
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          _carouselImagesFirebase.first,
+          fit: BoxFit.fill,
+          width: double.infinity,
+          height: 600,
+        ),
+      );
+    }
+
+    // Múltiples imágenes: usar carrusel
+    return CarouselSlider.builder(
+      itemCount: _carouselImagesFirebase.length,
+      itemBuilder: (context, index, realIndex) {
+        final url = _carouselImagesFirebase[index];
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            url,
+            fit: BoxFit.fill,
+            width: double.infinity,
+          ),
+        );
+      },
+      options: CarouselOptions(
+        height: 600,
+        autoPlay: true,
+        enlargeCenterPage: true,
+        viewportFraction: 0.9,
+        autoPlayInterval: const Duration(seconds: 6),
+        scrollPhysics: const BouncingScrollPhysics(),
+      ),
+    );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -334,28 +399,15 @@ class _RelojCOMState extends State<RelojCOM> {
                 const SizedBox(height: 40),
 
                 if (_campoBloqueado) ...[
-                  CarouselSlider(
-                    items:
-                        _carouselImages
-                            .map(
-                              (path) => ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.asset(
-                                  path,
-                                  fit: BoxFit.fill,
-                                  width: double.infinity,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                    options: CarouselOptions(
-                      height: 500,
-                      autoPlay: true,
-                      enlargeCenterPage: true,
-                      viewportFraction: 0.8,
-                      autoPlayInterval: const Duration(seconds: 8),
-                    ),
-                  ),
+                  if (_cargandoCarrusel)
+                    const CircularProgressIndicator()
+                  else if (_carouselImagesFirebase.isEmpty)
+                    const Text(
+                      'No hay imágenes disponibles.',
+                      style: TextStyle(color: Colors.white),
+                    )
+                  else
+                    _buildCarruselComedor(),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: _desbloquearManual,

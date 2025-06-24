@@ -18,21 +18,26 @@ class RelojES extends StatefulWidget {
 }
 
 class _RelojUSState extends State<RelojES> {
+
   final TextEditingController _numberController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final CheckinService _checkinService = CheckinService();
+
   late String _horaActual;
   late String _fechaActual;
   late Timer _timer;
   late StreamSubscription _connectivitySubscription;
+  late StreamSubscription<QuerySnapshot> _carruselSubscription;
+
+  bool _cargandoCarrusel = true;
   bool _offline = false;
   bool _campoBloqueado = false;
   String? _tipoForzado;
-  final CheckinService _checkinService = CheckinService();
-  final List<String> _carouselImages = [
-    'assets/1.png',
-    'assets/2.png',
-    'assets/3.png',
-  ];
+
+  Timer? _desbloqueoTimer;
+
+  List<String> _carouselImagesFirebase = [];
+
 
   @override
   void initState() {
@@ -43,7 +48,7 @@ class _RelojUSState extends State<RelojES> {
       (_) => _actualizarFechaHora(),
     );
     _cargarUsuariosLocales();
-
+    _escucharCambiosCarrusel();
     _focusNode.requestFocus();
 
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
@@ -61,6 +66,41 @@ class _RelojUSState extends State<RelojES> {
     Connectivity().checkConnectivity().then(
       (result) => setState(() => _offline = result == ConnectivityResult.none),
     );
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    _numberController.dispose();
+    _desbloqueoTimer?.cancel();
+    _focusNode.dispose();
+    _connectivitySubscription.cancel();
+    super.dispose();
+    _carruselSubscription.cancel();
+  }
+
+  void _escucharCambiosCarrusel() {
+    _carruselSubscription = FirebaseFirestore.instance
+        .collection('carrusel_comedor')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .listen((snapshot) {
+      setState(() {
+        _carouselImagesFirebase = snapshot.docs
+            .map((doc) => doc['imagenUrl'] as String)
+            .toList();
+        _cargandoCarrusel = false;
+      });
+    });
+  }
+
+  void _actualizarFechaHora() {
+    final now = DateTime.now();
+    setState(() {
+      _horaActual = DateFormat('hh:mm:ss a').format(now);
+      _fechaActual = DateFormat('dd MMMM yyyy', 'es_MX').format(now);
+      _campoBloqueado = !_esHorarioValido() && _tipoForzado == null;
+    });
   }
 
   Future<void> _cargarUsuariosLocales() async {
@@ -99,6 +139,59 @@ class _RelojUSState extends State<RelojES> {
     await prefs.setStringList('usuarios_locales', jsonList);
   }
 
+  Future<void> _desbloquearManual() async {
+    final tipo = await showDialog<String>(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+        title: const Text('Desbloqueo Manual'),
+        content: const Text(
+          'Estás fuera del horario permitido.\nSe registrará como "Entrada Planta".',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'entrada_planta'),
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
+
+    if (tipo != null && tipo == 'entrada_planta') {
+      setState(() {
+        _tipoForzado = tipo;
+        _campoBloqueado = false;
+        _focusNode.requestFocus();
+      });
+
+      _desbloqueoTimer?.cancel(); // cancelar temporizador anterior si existe
+      _desbloqueoTimer = Timer(const Duration(seconds: 30), () {
+        if (mounted) {
+          setState(() {
+            _tipoForzado = null;
+            _campoBloqueado = true;
+          });
+        }
+      });
+    }
+  }
+
+  Future<void> _registrarEntrada(String tarjeta) async {
+    final tipo = _obtenerTipoEntrada();
+    await _checkinService.procesarChecadaLocal(
+      tarjeta,
+      context,
+      tipoRegistro: 'checkins_offline',
+      tipoPersonalizado: tipo,
+    );
+
+    setState(() {
+      _numberController.clear();
+      _tipoForzado = null;
+      _campoBloqueado = !_esHorarioValido();
+      _focusNode.requestFocus();
+    });
+  }
 
   bool _esHorarioValido() {
     final now = DateTime.now();
@@ -142,7 +235,6 @@ class _RelojUSState extends State<RelojES> {
     return horarioComedorDia || horarioComedorNoche;
   }
 
-
   bool _isTimeInRange(TimeOfDay actual, TimeOfDay inicio, TimeOfDay fin) {
     final actualMins = actual.hour * 60 + actual.minute;
     final inicioMins = inicio.hour * 60 + inicio.minute;
@@ -155,7 +247,6 @@ class _RelojUSState extends State<RelojES> {
     }
   }
 
-
   String _obtenerTipoEntrada() {
     if (_tipoForzado != null) return _tipoForzado!;
     final hora = DateTime.now().hour;
@@ -166,79 +257,52 @@ class _RelojUSState extends State<RelojES> {
     }
   }
 
-  void _actualizarFechaHora() {
-    final now = DateTime.now();
-    setState(() {
-      _horaActual = DateFormat('hh:mm:ss a').format(now);
-      _fechaActual = DateFormat('dd MMMM yyyy', 'es_MX').format(now);
-      _campoBloqueado = !_esHorarioValido() && _tipoForzado == null;
-    });
-  }
-
-  Timer? _desbloqueoTimer; // agrégalo como propiedad de la clase
-
-  Future<void> _desbloquearManual() async {
-    final tipo = await showDialog<String>(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Desbloqueo Manual'),
-            content: const Text(
-              'Estás fuera del horario permitido.\nSe registrará como "Entrada Planta".',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, 'entrada_planta'),
-                child: const Text('Aceptar'),
-              ),
-            ],
-          ),
-    );
-
-    if (tipo != null && tipo == 'entrada_planta') {
-      setState(() {
-        _tipoForzado = tipo;
-        _campoBloqueado = false;
-        _focusNode.requestFocus();
-      });
-
-      _desbloqueoTimer?.cancel(); // cancelar temporizador anterior si existe
-      _desbloqueoTimer = Timer(const Duration(seconds: 30), () {
-        if (mounted) {
-          setState(() {
-            _tipoForzado = null;
-            _campoBloqueado = true;
-          });
-        }
-      });
+  Widget _buildCarruselComedor() {
+    if (_carouselImagesFirebase.isEmpty) {
+      return const Center(
+        child: Text(
+          'No hay imágenes disponibles',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
     }
-  }
 
-  Future<void> _registrarEntrada(String tarjeta) async {
-    final tipo = _obtenerTipoEntrada();
-    await _checkinService.procesarChecadaLocal(
-      tarjeta,
-      context,
-      tipoRegistro: 'checkins_offline',
-      tipoPersonalizado: tipo,
+    if (_carouselImagesFirebase.length == 1) {
+      // Solo una imagen: mostrar estática
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          _carouselImagesFirebase.first,
+          fit: BoxFit.fill,
+          width: double.infinity,
+          height: 600,
+        ),
+      );
+    }
+
+    // Múltiples imágenes: usar carrusel
+    return CarouselSlider.builder(
+      itemCount: _carouselImagesFirebase.length,
+      itemBuilder: (context, index, realIndex) {
+        final url = _carouselImagesFirebase[index];
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            url,
+            fit: BoxFit.fill,
+            width: double.infinity,
+          ),
+        );
+      },
+      options: CarouselOptions(
+        height: 600,
+        autoPlay: true,
+        enlargeCenterPage: true,
+        viewportFraction: 0.9,
+        autoPlayInterval: const Duration(seconds: 6),
+        scrollPhysics: const BouncingScrollPhysics(),
+      ),
     );
-
-    setState(() {
-      _numberController.clear();
-      _tipoForzado = null;
-      _campoBloqueado = !_esHorarioValido();
-      _focusNode.requestFocus();
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    _numberController.dispose();
-    _desbloqueoTimer?.cancel();
-    _focusNode.dispose();
-    _connectivitySubscription.cancel();
-    super.dispose();
   }
 
   @override
@@ -343,28 +407,15 @@ class _RelojUSState extends State<RelojES> {
                 const SizedBox(height: 40),
 
                 if (_campoBloqueado) ...[
-                  CarouselSlider(
-                    items:
-                        _carouselImages
-                            .map(
-                              (path) => ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.asset(
-                                  path,
-                                  fit: BoxFit.fill,
-                                  width: double.infinity,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                    options: CarouselOptions(
-                      height: 600,
-                      autoPlay: true,
-                      enlargeCenterPage: true,
-                      viewportFraction: 0.8,
-                      autoPlayInterval: const Duration(seconds: 10),
-                    ),
-                  ),
+                  if (_cargandoCarrusel)
+                    const CircularProgressIndicator()
+                  else if (_carouselImagesFirebase.isEmpty)
+                    const Text(
+                      'No hay imágenes disponibles.',
+                      style: TextStyle(color: Colors.white),
+                    )
+                  else
+                    _buildCarruselComedor(),
                   const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: _desbloquearManual,

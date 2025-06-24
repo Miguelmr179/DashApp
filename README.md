@@ -1,16 +1,9 @@
-# dashapp
+# Para cargar el proyecto ya sea en version WEB o en movil se requiere de modificar tres archivos:
 
-A new Flutter project.
+    #Create_Video               
+    #agregar foto por usuario
+    #agregar_Noticias
+    #editarCarrusel
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+# 1. Dentro del archivo debe de moficar el codigo comentado que dice Version WEB o Version Movil 
+# 2. Los tres archivos deben de estar en el mismo tipo, es decir, ya sea los tres en version WEB o los tres en version movil.

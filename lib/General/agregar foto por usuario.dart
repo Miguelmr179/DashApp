@@ -1,6 +1,5 @@
 /*
-Version WEB
-
+//Version WEB
 import 'dart:html' as html;
 import 'dart:typed_data';
 
@@ -19,6 +18,9 @@ class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuario
   final Map<String, Uint8List> _fotosTemporal = {};
   final Map<String, String> _nombresFotos = {};
   final Map<String, bool> _subiendo = {};
+  String _filtroNomina = '';
+  bool _soloSinFoto = false;
+  bool _ordenAscendente = true;
 
   Future<void> _seleccionarFoto(String uid) async {
     final input = html.FileUploadInputElement()..accept = 'image/*';
@@ -86,93 +88,171 @@ class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuario
     return Scaffold(
       appBar: AppBar(title: const Text('Administrar Fotos de Usuarios')),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('Usuarios').orderBy('nombre').snapshots(),
+        stream: FirebaseFirestore.instance.collection('Usuarios').snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
           final usuarios = snapshot.data!.docs;
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: usuarios.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
-            itemBuilder: (context, index) {
-              final usuario = usuarios[index];
-              final uid = usuario.id;
-              final data = usuario.data() as Map<String, dynamic>;
-              final nombre = data['nombre'] ?? 'Sin nombre';
-              final nominal = data['no'] ?? 'Sin nómina';
-              final fotoUrl = data['foto'] as String?;
+          // Filtrado
+          final usuariosFiltrados = usuarios.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final no = (data['no'] ?? '').toString();
+            final foto = (data['foto'] ?? '').toString();
 
-              final fotoTemporal = _fotosTemporal[uid];
-              final subiendo = _subiendo[uid] ?? false;
+            final coincideNomina = _filtroNomina.isEmpty || no.contains(_filtroNomina);
+            final sinFoto = _soloSinFoto ? (foto.isEmpty || foto == 'null') : true;
 
-              return Card(
-                elevation: 3,
-                child: Padding(
+            return coincideNomina && sinFoto;
+          }).toList();
+
+          // Ordenamiento
+          usuariosFiltrados.sort((a, b) {
+            final noA = int.tryParse((a.data() as Map<String, dynamic>)['no']?.toString() ?? '') ?? 0;
+            final noB = int.tryParse((b.data() as Map<String, dynamic>)['no']?.toString() ?? '') ?? 0;
+
+            return _ordenAscendente ? noA.compareTo(noB) : noB.compareTo(noA);
+          });
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: TextField(
+                  decoration: InputDecoration(
+                    labelText: 'Filtrar por nómina',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _filtroNomina = value.trim();
+                    });
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CheckboxListTile(
+                        value: _soloSinFoto,
+                        onChanged: (value) {
+                          setState(() {
+                            _soloSinFoto = value ?? false;
+                          });
+                        },
+                        title: const Text('Mostrar solo usuarios sin foto'),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    DropdownButton<bool>(
+                      value: _ordenAscendente,
+                      items: const [
+                        DropdownMenuItem(
+                          value: true,
+                          child: Text('Orden ascendente'),
+                        ),
+                        DropdownMenuItem(
+                          value: false,
+                          child: Text('Orden descendente'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _ordenAscendente = value ?? true;
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
                   padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      if (fotoTemporal != null)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.memory(fotoTemporal, width: 80, height: 80, fit: BoxFit.cover),
-                        )
-                      else if (fotoUrl != null)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(fotoUrl, width: 80, height: 80, fit: BoxFit.cover),
-                        )
-                      else
-                        const Icon(Icons.account_circle, size: 80, color: Colors.grey),
+                  itemCount: usuariosFiltrados.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final usuario = usuariosFiltrados[index];
+                    final uid = usuario.id;
+                    final data = usuario.data() as Map<String, dynamic>;
+                    final nombre = data['nombre'] ?? 'Sin nombre';
+                    final nominal = data['no'] ?? 'Sin nómina';
+                    final fotoUrl = data['foto'] as String?;
 
-                      const SizedBox(width: 16),
+                    final fotoTemporal = _fotosTemporal[uid];
+                    final subiendo = _subiendo[uid] ?? false;
 
-                      // Nombre y botones
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    return Card(
+                      elevation: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
                           children: [
-                            Text(nombre, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Text('Nómina: $nominal', style: const TextStyle(fontSize: 16, color: Colors.grey)),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                ElevatedButton.icon(
-                                  icon: const Icon(Icons.photo),
-                                  label: const Text('Seleccionar'),
-                                  onPressed: () => _seleccionarFoto(uid),
-                                ),
-                                const SizedBox(width: 8),
-                                if (fotoTemporal != null)
-                                  ElevatedButton.icon(
-                                    icon: const Icon(Icons.upload),
-                                    label: Text(subiendo ? 'Subiendo...' : 'Subir'),
-                                    onPressed: subiendo ? null : () => _subirFotoParaUsuario(uid),
-                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-                                  ),
-                              ],
+                            if (fotoTemporal != null)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.memory(fotoTemporal, width: 80, height: 80, fit: BoxFit.cover),
+                              )
+                            else if (fotoUrl != null && fotoUrl.isNotEmpty)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(fotoUrl, width: 80, height: 80, fit: BoxFit.cover),
+                              )
+                            else
+                              const Icon(Icons.account_circle, size: 80, color: Colors.grey),
+
+                            const SizedBox(width: 16),
+
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(nombre, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  Text('Nómina: $nominal', style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      ElevatedButton.icon(
+                                        icon: const Icon(Icons.photo),
+                                        label: const Text('Seleccionar'),
+                                        onPressed: () => _seleccionarFoto(uid),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      if (fotoTemporal != null)
+                                        ElevatedButton.icon(
+                                          icon: const Icon(Icons.upload),
+                                          label: Text(subiendo ? 'Subiendo...' : 'Subir'),
+                                          onPressed: subiendo ? null : () => _subirFotoParaUsuario(uid),
+                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+                                        ),
+                                    ],
+                                  )
+                                ],
+                              ),
                             )
                           ],
                         ),
-                      )
-                    ],
-                  ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ],
           );
         },
       ),
     );
   }
 }
-
-
 */*/
 
 
+//Version MOVIL
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -334,3 +414,7 @@ class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuario
     );
   }
 }
+
+
+
+
