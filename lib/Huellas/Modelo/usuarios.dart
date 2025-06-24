@@ -1,8 +1,8 @@
 class Usuario {
   final String titulo;
   final String nombre;
-  final String? foto;        // URL en Firebase Storage
-  String? fotoLocal;         // Ruta local en el dispositivo
+  final String? foto;
+  String? fotoLocal;
 
   Usuario({
     required this.titulo,
@@ -15,18 +15,21 @@ class Usuario {
     return Usuario(
       titulo: map['Título'] ?? '',
       nombre: map['nombre'] ?? '',
-      foto: map['foto'],                          // puede ser null
-      fotoLocal: map['foto_local'],              // persistido localmente
+      foto: map['foto'],
+      fotoLocal: map['foto_local'],
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'titulo': titulo,
-    'nombre': nombre,
-    'foto': foto,
-    'foto_local': fotoLocal,
-  };
+  Map<String, dynamic> toMap() {
+    return {
+      'titulo': titulo,
+      'nombre': nombre,
+      'foto': foto,
+      'foto_local': fotoLocal,
+    };
+  }
 }
+
 
 class RegistroOffline {
   final String titulo;

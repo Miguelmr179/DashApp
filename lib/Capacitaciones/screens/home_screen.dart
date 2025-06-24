@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'manager/manage_global_progress_screen.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dashapp/General/agregar_eventos.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class HomeScreen extends StatefulWidget {
   final String role;
@@ -717,13 +718,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildEventos() {
     final hoy = DateTime.now();
+    final hoyDesdeCero = DateTime(hoy.year, hoy.month, hoy.day);
+
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('eventos')
-          .where('fecha', isGreaterThanOrEqualTo: hoy)
+          .where('fecha', isGreaterThanOrEqualTo: hoyDesdeCero)
           .orderBy('fecha')
-          .limit(5)
+          .limit(50)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -898,22 +901,23 @@ class _HomeScreenState extends State<HomeScreen> {
             });
             Navigator.pop(context);
           }, drawerTextColor),
-          _buildDrawerItem(Icons.post_add, 'Agregar Noticia', () {
+          _buildDrawerItem(Icons.post_add, 'Agregar anuncio', () {
             Navigator.pop(context);
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AgregarNoticiaScreen()),
             );
           }, drawerTextColor),
-          _buildDrawerItem(Icons.post_add, 'Agregar foto de usuario', () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const AdministrarFotosUsuariosScreen(),
-              ),
-            );
-          }, drawerTextColor),
+          if (kIsWeb)
+            _buildDrawerItem(Icons.person_add, 'Agregar foto de usuario', () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AdministrarFotosUsuariosScreen(),
+                ),
+              );
+            }, drawerTextColor),
           _buildDrawerItem(Icons.post_add, 'Agregar eventos', () {
             Navigator.pop(context);
             Navigator.push(

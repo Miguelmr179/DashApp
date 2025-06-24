@@ -1,5 +1,5 @@
 
-/*
+
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -650,11 +650,9 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
     );
   }
 }
-*/
 
 
-
-
+/*
 //Para web
 import 'dart:io';
 import 'dart:typed_data';
@@ -1342,3 +1340,5 @@ class _CreateContentScreenState extends State<CreateContentScreen> {
     );
   }
 }
+*/*/
+*/

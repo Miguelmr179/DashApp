@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dashapp/Capacitaciones/services/EditProfileScreen.dart';
 import 'package:dashapp/Capacitaciones/services/register_screen.dart';
+import 'package:dashapp/Huellas/Vistas/menu.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -497,7 +498,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed: () async {
                                   final accesoPermitido = await _mostrarDialogoContrasena(context);
                                   if (accesoPermitido) {
-                                    await _mostrarSelectorReloj(context);
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const MenuPage(),
+                                      ),
+                                    );
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text('Contraseña incorrecta')),

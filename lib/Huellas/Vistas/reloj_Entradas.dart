@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,7 +20,6 @@ class RelojES extends StatefulWidget {
 class _RelojUSState extends State<RelojES> {
   final TextEditingController _numberController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-
   late String _horaActual;
   late String _fechaActual;
   late Timer _timer;
@@ -27,9 +27,7 @@ class _RelojUSState extends State<RelojES> {
   bool _offline = false;
   bool _campoBloqueado = false;
   String? _tipoForzado;
-
   final CheckinService _checkinService = CheckinService();
-
   final List<String> _carouselImages = [
     'assets/1.png',
     'assets/2.png',
@@ -44,9 +42,9 @@ class _RelojUSState extends State<RelojES> {
       const Duration(seconds: 1),
       (_) => _actualizarFechaHora(),
     );
+    _cargarUsuariosLocales();
 
     _focusNode.requestFocus();
-    _cargarUsuariosLocales();
 
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
       result,
@@ -68,14 +66,14 @@ class _RelojUSState extends State<RelojES> {
   Future<void> _cargarUsuariosLocales() async {
     final prefs = await SharedPreferences.getInstance();
     final usuariosSnapshot =
-        await FirebaseFirestore.instance.collection('Usuarios').get();
+    await FirebaseFirestore.instance.collection('Usuarios').get();
 
     final listaActualRaw = prefs.getStringList('usuarios_locales') ?? [];
     final listaActual =
-        listaActualRaw
-            .map((e) => jsonDecode(e))
-            .whereType<Map<String, dynamic>>()
-            .toList();
+    listaActualRaw
+        .map((e) => jsonDecode(e))
+        .whereType<Map<String, dynamic>>()
+        .toList();
 
     final nuevaLista = <Map<String, dynamic>>[];
 
@@ -85,7 +83,7 @@ class _RelojUSState extends State<RelojES> {
 
       // Busca si ya estaba antes
       final existente = listaActual.firstWhere(
-        (u) => u['titulo'] == titulo,
+            (u) => u['titulo'] == titulo,
         orElse: () => {},
       );
 
@@ -100,6 +98,7 @@ class _RelojUSState extends State<RelojES> {
     final jsonList = nuevaLista.map(jsonEncode).toList();
     await prefs.setStringList('usuarios_locales', jsonList);
   }
+
 
   bool _esHorarioValido() {
     final now = DateTime.now();
@@ -123,7 +122,6 @@ class _RelojUSState extends State<RelojES> {
           _isTimeInRange(horaActual, const TimeOfDay(hour: 22, minute: 0), const TimeOfDay(hour: 3, minute: 14));
     }
   }
-
 
   bool _esHorarioComedor() {
     final now = DateTime.now();

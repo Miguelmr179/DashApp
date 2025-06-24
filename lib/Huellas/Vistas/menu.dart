@@ -1,15 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dashapp/Huellas/Controlador/ConfiguracionSubidasScreen.dart';
 import 'package:dashapp/Huellas/Vistas/reloj_Entradas.dart';
 import 'package:dashapp/Huellas/Vistas/reloj_Salidas.dart';
 import 'package:dashapp/Huellas/Vistas/resumenChecadas.dart';
+import 'package:dashapp/Huellas/usuariosLocales.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
-import '../Controlador/ConfiguracionSubidasScreen.dart';
-import '../Controlador/controladorChecadas.dart';
 import '../Modelo/usuarios.dart';
 
 class MenuPage extends StatefulWidget {
@@ -20,20 +20,21 @@ class MenuPage extends StatefulWidget {
 }
 
 class _MenuPageState extends State<MenuPage> {
-  final CheckinService _checkinService = CheckinService();
   bool _cargandoUsuarios = false;
 
   @override
   void initState() {
     super.initState();
-    _checkinService.iniciarSubidaAutomatica();
+    cargarUsuariosLocales();
   }
 
   Future<String?> _descargarYGuardarImagen(String uid, String url) async {
     try {
       final httpClient = HttpClient();
+      httpClient.connectionTimeout = const Duration(seconds: 10); // ← Límite
+
       final request = await httpClient.getUrl(Uri.parse(url));
-      final response = await request.close();
+      final response = await request.close().timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final bytes = await consolidateHttpClientResponseBytes(response);
@@ -44,7 +45,7 @@ class _MenuPageState extends State<MenuPage> {
         return filePath;
       }
     } catch (e) {
-      debugPrint('Error descargando imagen de $uid: $e');
+      debugPrint('⛔ Error descargando imagen de $uid: $e');
     }
     return null;
   }
@@ -70,69 +71,37 @@ class _MenuPageState extends State<MenuPage> {
         orElse: () => {},
       );
 
-      if (local.isNotEmpty && local['foto_local'] != null && File(local['foto_local']).existsSync()) {
-        usuario.fotoLocal = local['foto_local'];
-      } else if (url != null && url.isNotEmpty) {
-        final localPath = await _descargarYGuardarImagen(uid, url);
-        if (localPath != null) {
-          usuario.fotoLocal = localPath;
+      if (local.isNotEmpty && local['foto_local'] != null) {
+        final exists = await File(local['foto_local']).exists();
+        if (exists) {
+          usuario.fotoLocal = local['foto_local'];
+          debugPrint('✅ Usando imagen local para $uid');
+          listaJson.add(jsonEncode(usuario.toMap()));
+          continue;
         }
       }
 
-      listaJson.add(jsonEncode(usuario.toJson()));
+      if (url != null && url.isNotEmpty) {
+        final localPath = await _descargarYGuardarImagen(uid, url);
+        if (localPath != null) {
+          usuario.fotoLocal = localPath;
+          debugPrint('📥 Imagen descargada en: $localPath');
+          listaJson.add(jsonEncode(usuario.toMap()));
+        } else {
+          debugPrint('⚠️ No se pudo descargar imagen para $uid');
+        }
+      }
     }
 
     await prefs.setStringList('usuarios_locales', listaJson);
-
     setState(() => _cargandoUsuarios = false);
   }
 
-  Future<bool> _solicitarContrasena(BuildContext context) async {
-    final TextEditingController _controller = TextEditingController();
-    bool acceso = false;
 
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: const Text('Acceso restringido'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Ingresa la contraseña para continuar:'),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _controller,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  hintText: 'Contraseña',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_controller.text.trim() == 'Dcc2025') {
-                  acceso = true;
-                }
-                Navigator.pop(context);
-              },
-              child: const Text('Aceptar'),
-            ),
-          ],
-        );
-      },
-    );
-
-    return acceso;
+  Future<int> obtenerTotalUsuariosGuardados() async {
+    final prefs = await SharedPreferences.getInstance();
+    final listaRaw = prefs.getStringList('usuarios_locales') ?? [];
+    return listaRaw.length;
   }
 
   @override
@@ -170,6 +139,11 @@ class _MenuPageState extends State<MenuPage> {
               icon: const Icon(Icons.sync),
               onPressed: _cargandoUsuarios ? null : cargarUsuariosLocales,
             ),
+            IconButton(
+              tooltip: 'Actualizar conteo de usuarios',
+              icon: const Icon(Icons.refresh),
+              onPressed: _cargandoUsuarios ? null : obtenerTotalUsuariosGuardados,
+            ),
           ],
         ),
         body: _cargandoUsuarios
@@ -206,23 +180,48 @@ class _MenuPageState extends State<MenuPage> {
                   },
                 ),
                 const SizedBox(height: 25),
-
-                const SizedBox(height: 25),
+                _buildMenuCard(
+                  context,
+                  icon: Icons.group,
+                  label: 'Usuarios cargados',
+                  color: Colors.blueAccent.shade100,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const UsuariosLocalesScreen()),
+                    );
+                  },
+                ),
+                const SizedBox(height: 60),
                 _buildMenuCard(
                   context,
                   icon: Icons.settings,
-                  label: 'Configuración',
-                  color: Colors.deepPurpleAccent,
-                  onTap: () async {
-                    final accesoPermitido = await _solicitarContrasena(context);
-                    if (accesoPermitido) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SubmenuConfiguracion()),
-                      );
+                  label: 'Configuracion',
+                  color: Colors.grey.shade400,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SubmenuConfiguracion()),
+                    );
+                  },
+                ),
+                const SizedBox(height: 25),
+                //Mostrar el total de usuarios guardados en un texto
+                FutureBuilder<int>(
+                  future: obtenerTotalUsuariosGuardados(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const CircularProgressIndicator();
+                    } else if (snapshot.hasError) {
+                      return Text('Error: ${snapshot.error}');
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Contraseña incorrecta')),
+                      return Text(
+                        'Total de usuarios guardados: ${snapshot.data}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       );
                     }
                   },
@@ -291,6 +290,10 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 }
+
+
+
+
 class SubmenuConfiguracion extends StatelessWidget {
   const SubmenuConfiguracion({super.key});
 
@@ -387,3 +390,4 @@ class _OpcionSubmenu {
     required this.onTap,
   });
 }
+
