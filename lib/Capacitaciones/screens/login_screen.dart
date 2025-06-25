@@ -1,19 +1,17 @@
 import 'dart:async';
 
+import 'package:dashapp/Capacitaciones/screens/register_screen.dart';
 import 'package:dashapp/Capacitaciones/services/EditProfileScreen.dart';
-import 'package:dashapp/Capacitaciones/services/register_screen.dart';
+import 'package:dashapp/General/home_screen.dart';
 import 'package:dashapp/Huellas/Vistas/menu.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dashapp/Capacitaciones/screens/home_screen.dart';
 import 'package:dashapp/Capacitaciones/services/theme_notifier.dart';
 import 'package:dashapp/Capacitaciones/services/auth_service.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
-import '../../Huellas/Vistas/reloj_Entradas.dart';
-import '../../Huellas/Vistas/reloj_Salidas.dart';
 
 class LoginScreen extends StatefulWidget {
   final String? initialEmail;
@@ -67,8 +65,8 @@ class _LoginScreenState extends State<LoginScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         )
-            .timeout(const Duration(seconds: 30), onTimeout: () {
-          throw TimeoutException('La solicitud ha tardado demasiado.');
+            .timeout(const Duration(seconds: 12), onTimeout: () {
+          throw TimeoutException('Verifica tu conexión a internet.');
         });
 
         final userId = userCredential.user!.uid;
@@ -154,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final user = await _authService
           .signInWithGoogle()
-          .timeout(const Duration(seconds: 30), onTimeout: () {
+          .timeout(const Duration(seconds: 12), onTimeout: () {
         throw TimeoutException('La solicitud ha tardado demasiado.');
       });
 
@@ -275,43 +273,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     return acceso;
-  }
-
-  Future<void> _mostrarSelectorReloj(BuildContext context) async {
-    await showDialog(
-      context: context,
-      builder: (_) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: const Text('Selecciona el tipo de Reloj'),
-          content: const Text('¿A qué reloj deseas ingresar como invitado?'),
-          actions: [
-            TextButton.icon(
-              icon: const Icon(Icons.login),
-              label: const Text('Reloj Entradas'),
-              onPressed: () {
-                Navigator.pop(context); // Cierra el diálogo
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RelojES()),
-                );
-              },
-            ),
-            TextButton.icon(
-              icon: const Icon(Icons.logout),
-              label: const Text('Reloj Salidas'),
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RelojCOM()),
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override

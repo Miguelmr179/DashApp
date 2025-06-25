@@ -1,9 +1,8 @@
 import 'dart:async';
+import 'package:dashapp/Huellas/Vistas/EditarRegistroScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-
-import 'EditarRegistroScreen.dart';
 
 class ResumenChecadasScreen extends StatefulWidget {
   const ResumenChecadasScreen({super.key});

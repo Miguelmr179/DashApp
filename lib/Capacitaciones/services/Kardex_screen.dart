@@ -384,7 +384,7 @@ class _CardexScreenState extends State<CardexScreen> {
     return Scaffold(
       extendBodyBehindAppBar: false,
       appBar: AppBar(
-        title: const Text('Cardex Anual'),
+        title: const Text('Kardex anual'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [

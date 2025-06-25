@@ -5,10 +5,11 @@ import 'package:dashapp/General/agregar_Noticias.dart';
 import 'package:dashapp/Huellas/Vistas/editarCarrusel.dart';
 import 'package:dashapp/Utileria/global_exports.dart';
 import 'package:intl/intl.dart';
-import 'manager/manage_global_progress_screen.dart';
+import '../Capacitaciones/screens/manager/manage_global_progress_screen.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dashapp/General/agregar_eventos.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:dashapp/General/galeria_Eventos.dart';
 
 class HomeScreen extends StatefulWidget {
   final String role;
@@ -333,113 +334,121 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildVistaIntranet() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth > 800;
+  Widget _seccionCumpleaniosDelDia() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('Usuarios').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(); // nada mientras carga
+        }
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(8),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 55, bottom: 16),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 2000),
-                  child:
-                      isWide
-                          ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 3,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    _seccionTitulo('📰 Anuncios'),
-                                    SizedBox(
-                                      height: 400,
-                                      child: _buildCarruselAnuncios(),
-                                    ),
-                                    const SizedBox(height: 80),
-                                    _seccionTitulo('📅 Próximos eventos'),
-                                    _buildEventos(),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 24),
-                              // Columna derecha: Cumpleaños
-                              Expanded(
-                                flex: 1,
-                                child: Column(
-                                  children: [
-                                    Align(
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        '🎂 Cumpleaños de hoy',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Container(
-                                      constraints: const BoxConstraints(
-                                        minHeight: 400,
-                                      ),
-                                      child: _buildCumpleaniosDelDia(),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    Align(
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        '🎂 Cumpleaños del mes',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Container(
-                                      constraints: const BoxConstraints(
-                                        minHeight: 400,
-                                      ),
-                                      child: _buildCumpleaniosMes(),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          )
-                          : Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const SizedBox(height: 16),
-                              _seccionTitulo('📰 Anuncios'),
-                              SizedBox(
-                                height: 400,
-                                child: _buildCarruselAnuncios(),
-                              ),
-                              const SizedBox(height: 24),
-                              _seccionTitulo('🎂 Cumpleaños de hoy'),
-                              _buildCumpleaniosDelDia(),
-                              const SizedBox(height: 24),
-                              _seccionTitulo('🎂 Cumpleaños del mes'),
-                              _buildCumpleaniosMes(),
-                              const SizedBox(height: 24),
-                              _seccionTitulo('📅 Próximos eventos'),
-                              _buildEventos(),
-                            ],
-                          ),
-                ),
+        final hoy = DateTime.now();
+
+        final cumpleanierosHoy = snapshot.data?.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final cumpleStr = data['fechaNac'] ?? '';
+          if (cumpleStr.isEmpty) return false;
+
+          try {
+            final cumple = DateFormat("yyyy-MM-dd", "es_MX").parseStrict(cumpleStr);
+            return cumple.day == hoy.day && cumple.month == hoy.month;
+          } catch (_) {
+            return false;
+          }
+        }).toList();
+
+        if (cumpleanierosHoy == null || cumpleanierosHoy.isEmpty) {
+          return const SizedBox(); // no renderiza nada
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text(
+              '🎂 Cumpleaños de hoy',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 10),
+            _buildCarruselCumpleaniosHoy(cumpleanierosHoy),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCarruselCumpleaniosHoy(List<QueryDocumentSnapshot> cumpleanierosHoy) {
+    return CarouselSlider.builder(
+      itemCount: cumpleanierosHoy.length,
+      options: CarouselOptions(
+        height: 280,
+        enlargeCenterPage: true,
+        enableInfiniteScroll: cumpleanierosHoy.length > 1,
+        autoPlay: cumpleanierosHoy.length > 1,
+        autoPlayInterval: const Duration(seconds: 5),
+      ),
+      itemBuilder: (context, index, realIndex) {
+        final doc = cumpleanierosHoy[index];
+        final data = doc.data() as Map<String, dynamic>;
+        final nombre = data['nombre'] ?? 'Sin nombre';
+        final foto = data['foto'] ?? '';
+
+        return Container(
+          width: 240,
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF8EC5FC), Color(0xFFE0C3FC)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.white,
+                backgroundImage: (foto != null && foto.toString().isNotEmpty)
+                    ? NetworkImage(foto)
+                    : null,
+                child: (foto == null || foto.toString().isEmpty)
+                    ? const Icon(Icons.person, color: Colors.grey, size: 40)
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                nombre,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '🎉 ¡Feliz cumpleaños!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black54,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -587,52 +596,42 @@ class _HomeScreenState extends State<HomeScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final cumpleanieros =
-            snapshot.data?.docs.where((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              final cumpleStr = data['fechaNac'] ?? '';
-              if (cumpleStr.isEmpty) return false;
+        final cumpleanieros = snapshot.data?.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final cumpleStr = data['fechaNac'] ?? '';
+          if (cumpleStr.isEmpty) return false;
 
-              try {
-                final cumple = DateFormat(
-                  "yyyy-MM-dd",
-                  "es_MX",
-                ).parseStrict(cumpleStr);
-                return cumple.month == mesActual;
-              } catch (_) {
-                return false;
-              }
-            }).toList();
+          try {
+            final cumple = DateFormat("yyyy-MM-dd", "es_MX").parseStrict(cumpleStr);
+            return cumple.month == mesActual;
+          } catch (_) {
+            return false;
+          }
+        }).toList();
 
         if (cumpleanieros == null || cumpleanieros.isEmpty) {
-          return const Center(child: Text('No hay cumpleaños este mes.'));
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: Text('No hay cumpleaños este mes.')),
+          );
         }
 
         // Ordenar por día del mes
         cumpleanieros.sort((a, b) {
           final dataA = a.data() as Map<String, dynamic>;
           final dataB = b.data() as Map<String, dynamic>;
-
           try {
-            final fechaA = DateFormat(
-              "yyyy-MM-dd",
-              "es_MX",
-            ).parseStrict(dataA['fechaNac']);
-            final fechaB = DateFormat(
-              "yyyy-MM-dd",
-              "es_MX",
-            ).parseStrict(dataB['fechaNac']);
+            final fechaA = DateFormat("yyyy-MM-dd", "es_MX").parseStrict(dataA['fechaNac']);
+            final fechaB = DateFormat("yyyy-MM-dd", "es_MX").parseStrict(dataB['fechaNac']);
             return fechaA.day.compareTo(fechaB.day);
           } catch (_) {
             return 0;
           }
         });
 
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: cumpleanieros.length,
-          itemBuilder: (context, index) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: List.generate(cumpleanieros.length, (index) {
             final doc = cumpleanieros[index];
             final data = doc.data() as Map<String, dynamic>;
             final nombre = data['nombre'] ?? 'Sin nombre';
@@ -640,10 +639,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             String fechaStr = 'Sin fecha';
             try {
-              final cumple = DateFormat(
-                "yyyy-MM-dd",
-                "es_MX",
-              ).parseStrict(cumpleStr);
+              final cumple = DateFormat("yyyy-MM-dd", "es_MX").parseStrict(cumpleStr);
               fechaStr = DateFormat('dd MMMM', 'es_MX').format(cumple);
             } catch (_) {}
 
@@ -662,10 +658,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 16,
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -682,17 +675,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         color: Colors.grey.shade300,
                       ),
-                      child:
-                          data['foto'] == null ||
-                                  data['foto'].toString().isEmpty
-                              ? const Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 28,
-                              )
-                              : null,
+                      child: data['foto'] == null || data['foto'].toString().isEmpty
+                          ? const Icon(Icons.person, color: Colors.white, size: 28)
+                          : null,
                     ),
-
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
@@ -721,7 +707,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             );
-          },
+          }),
         );
       },
     );
@@ -836,56 +822,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          margin: const EdgeInsets.all(20),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                titulo,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1.2,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                contenido,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.9),
-                                  fontSize: 16,
-                                  height: 1.4,
-                                ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                fecha,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.8),
-                                  fontSize: 14,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -901,7 +837,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 autoPlay: true,
                 enlargeCenterPage: true,
                 viewportFraction: 0.95,
-                autoPlayInterval: const Duration(seconds: 6),
+                autoPlayInterval: const Duration(seconds: 10),
                 enableInfiniteScroll: true,
                 scrollPhysics: const BouncingScrollPhysics(),
               ),
@@ -965,72 +901,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         else
                           Container(color: Colors.grey[300]),
 
-                        // Capa oscura
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withOpacity(0.7),
-                              ],
-                              stops: const [0.5, 1.0],
-                            ),
-                          ),
-                        ),
 
-                        // Contenido
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            margin: const EdgeInsets.all(20),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  titulo,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.2,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  contenido,
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: 16,
-                                    height: 1.4,
-                                  ),
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  fecha,
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
-                                    fontSize: 14,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -1043,137 +914,299 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEventos() {
-    final hoy = DateTime.now();
-    final hoyDesdeCero = DateTime(hoy.year, hoy.month, hoy.day);
+  Widget _buildVistaIntranet() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 800;
 
-    return StreamBuilder<QuerySnapshot>(
-      stream:
-          FirebaseFirestore.instance
-              .collection('eventos')
-              .where('fecha', isGreaterThanOrEqualTo: hoyDesdeCero)
-              .orderBy('fecha')
-              .limit(50)
-              .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final eventos = snapshot.data?.docs ?? [];
-
-        if (eventos.isEmpty) {
-          return const Center(child: Text('No hay eventos próximos.'));
-        }
-
-        return SizedBox(
-          height: 220,
-          child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(context).copyWith(
-              scrollbars: true,
-              dragDevices: {
-                PointerDeviceKind.touch,
-                PointerDeviceKind.mouse,
-                PointerDeviceKind.trackpad,
-              },
-            ),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: eventos.length,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemBuilder: (context, index) {
-                final doc = eventos[index];
-                final data = doc.data() as Map<String, dynamic>;
-                final titulo = data['titulo'] ?? 'Evento';
-                final descripcion = data['descripcion'] ?? '';
-                final fecha = (data['fecha'] as Timestamp).toDate();
-                final fechaStr = DateFormat(
-                  'dd MMM yyyy',
-                  'es_MX',
-                ).format(fecha);
-
-                return Container(
-                  width: 280,
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Card(
-                    elevation: 5,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.grey.shade500, Colors.grey.shade300],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(8),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 55, bottom: 16),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 2000),
+                  child:
+                  isWide
+                      ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            _seccionTitulo('📰 Anuncios'),
+                            SizedBox(
+                              height: 400,
+                              child: _buildCarruselAnuncios(),
+                            ),
+                            const SizedBox(height: 80),
+                            _seccionTitulo('📅 Próximos eventos'),
+                            _buildEventos(),
+                          ],
                         ),
-                        borderRadius: BorderRadius.circular(16),
                       ),
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade700,
-                              shape: BoxShape.circle,
-                            ),
-                            padding: const EdgeInsets.all(10),
-                            child: const Icon(
-                              Icons.event,
-                              color: Colors.white,
-                              size: 26,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  fechaStr,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                      const SizedBox(width: 24),
+                      // Columna derecha: Cumpleaños
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          children: [
+                            Align(
+                              alignment: Alignment.center,
+                              child: Text(
+                                '🎂 Cumpleaños de hoy',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  titulo,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black87,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  descripcion,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black87,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 10),
+                            Container(
+                              constraints: const BoxConstraints(
+                              ),
+                              child: _buildCumpleaniosDelDia(),
+                            ),
+                            Align(
+                              alignment: Alignment.center,
+                              child: Text(
+                                '🎂 Cumpleaños del mes',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Container(
+                              child: _buildCumpleaniosMes(),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
+                  )
+                      : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 16),
+                      _seccionTitulo('📰 Anuncios'),
+                      SizedBox(
+                        height: 400,
+                        child: _buildCarruselAnuncios(),
+                      ),
+                      const SizedBox(height: 24),
+                      _seccionCumpleaniosDelDia(),
+                      const SizedBox(height: 24),
+                      _seccionTitulo('🎂 Cumpleaños del mes'),
+                      _buildCumpleaniosMes(),
+                      const SizedBox(height: 24),
+                      _seccionTitulo('📅 Próximos eventos'),
+                      _buildEventos(),
+                    ],
                   ),
-                );
-              },
+                ),
+              ),
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildEventos() {
+    final hoy = DateTime.now();
+    final inicioMes = DateTime(hoy.year, hoy.month, 1);
+    final hoyDesdeCero = DateTime(hoy.year, hoy.month, hoy.day);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 800;
+
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('eventos')
+              .where('fecha', isGreaterThanOrEqualTo: inicioMes)
+              .orderBy('fecha')
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final todos = snapshot.data?.docs ?? [];
+
+            // Separar eventos pasados del mes actual y futuros
+            final pasadosDelMes = todos.where((doc) {
+              final fecha = (doc['fecha'] as Timestamp).toDate();
+              final soloFecha = DateTime(fecha.year, fecha.month, fecha.day);
+              return soloFecha.isBefore(hoyDesdeCero);
+            }).toList();
+
+            final futuros = todos.where((doc) {
+              final fecha = (doc['fecha'] as Timestamp).toDate();
+              final soloFecha = DateTime(fecha.year, fecha.month, fecha.day);
+              return !soloFecha.isBefore(hoyDesdeCero); // hoy o futuros
+            }).toList();
+
+            // Unir: primero pasados del mes, luego futuros
+            final eventos = [...pasadosDelMes, ...futuros];
+
+            if (eventos.isEmpty) {
+              return const Center(child: Text('No hay eventos disponibles.'));
+            }
+
+            if (isWide) {
+              return SizedBox(
+                height: 320,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: eventos.length,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemBuilder: (context, index) =>
+                      _buildTarjetaEvento(context, eventos[index], hoyDesdeCero),
+                ),
+              );
+            } else {
+              return SizedBox(
+                height: 300,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: eventos
+                        .map((doc) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: _buildTarjetaEvento(context, doc, hoyDesdeCero),
+                    ))
+                        .toList(),
+                  ),
+                ),
+              );
+
+
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTarjetaEvento(BuildContext context, DocumentSnapshot doc, DateTime hoyDesdeCero) {
+    final data = doc.data() as Map<String, dynamic>;
+    final titulo = data['titulo'] ?? 'Evento';
+    final descripcion = data['descripcion'] ?? '';
+    final fecha = (data['fecha'] as Timestamp).toDate();
+    final fechaStr = DateFormat('dd MMM yyyy', 'es_MX').format(fecha);
+    final fechaEvento = DateTime(fecha.year, fecha.month, fecha.day);
+    final eventoPasado = fechaEvento.isBefore(hoyDesdeCero);
+
+    return Container(
+      width: 300,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      child: Card(
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.white, Colors.white],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade200,
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(10),
+                    child: const Icon(Icons.event, color: Colors.white, size: 26),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      fechaStr,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                titulo,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                descripcion,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (eventoPasado) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => GaleriaEventoScreen(
+                            fechaEvento: fecha,
+                            eventoId: doc.id,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.photo_library),
+                    label: const Text("Ver galería"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade200,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1186,7 +1219,6 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: drawerBackground,
       child: Column(
         children: [
-          // Sección principal (scrollable)
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
@@ -1392,7 +1424,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         _buildDrawerItem(
                           Icons.photo_library,
-                          'Editar carrusel comedor',
+                          'Configurar carrusel de vigilancia',
                               () {
                             Navigator.push(
                               context,
@@ -1568,12 +1600,28 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             decoration: const BoxDecoration(color: Colors.blueAccent),
           ),
+          const Divider(),
+          _buildDrawerItem(Icons.home, 'Inicio', () {
+            setState(() {
+              _mostrarCursos = false;
+            });
+            Navigator.pop(context);
+          }, drawerTextColor),
+          const Divider(),
+          _buildDrawerItem(Icons.school, 'Capacitaciones', () {
+            setState(() {
+              _mostrarCursos = true;
+            });
+            Navigator.pop(context);
+          }, drawerTextColor),
+          const Divider(),
           _buildDrawerItem(
             Icons.settings,
             'Configuración de Perfil',
             () => _navigate(const EditProfileScreen()),
             drawerTextColor,
           ),
+
           _buildDrawerItem(
             Icons.logout,
             'Cerrar Sesión',

@@ -53,7 +53,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDF9KhjzisvmE-NBraR6svcY_QYmGupRcg',
-    appId: '1:1097935473525:android:96fad1836a1e3de3dd213c',
+    appId: '1:1097935473525:android:53a5235fdd02364bdd213c',
     messagingSenderId: '1097935473525',
     projectId: 'capacitaciones-1adfd',
     databaseURL: 'https://capacitaciones-1adfd-default-rtdb.firebaseio.com',
@@ -62,35 +62,37 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDKaCsuh4c702ArSojbvXRG7Hl9fsoAJb0',
-    appId: '1:1097935473525:ios:ed894f3bd538fa5cdd213c',
+    appId: '1:1097935473525:ios:4309afdbb3499a81dd213c',
     messagingSenderId: '1097935473525',
     projectId: 'capacitaciones-1adfd',
     databaseURL: 'https://capacitaciones-1adfd-default-rtdb.firebaseio.com',
     storageBucket: 'capacitaciones-1adfd.firebasestorage.app',
-    iosClientId: '1097935473525-eclti0oa9tjjm81cr3dqofu193g55506.apps.googleusercontent.com',
-    iosBundleId: 'com.example.capacitaciones',
+    androidClientId: '1097935473525-5bu013kbhuv1gplevq374vvaf8bss0f9.apps.googleusercontent.com',
+    iosClientId: '1097935473525-2ajkfaaclj3n3hs5h06674q0l6qvm0fk.apps.googleusercontent.com',
+    iosBundleId: 'com.example.dashapp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyDKaCsuh4c702ArSojbvXRG7Hl9fsoAJb0',
-    appId: '1:1097935473525:ios:ed894f3bd538fa5cdd213c',
+    appId: '1:1097935473525:ios:4309afdbb3499a81dd213c',
     messagingSenderId: '1097935473525',
     projectId: 'capacitaciones-1adfd',
     databaseURL: 'https://capacitaciones-1adfd-default-rtdb.firebaseio.com',
     storageBucket: 'capacitaciones-1adfd.firebasestorage.app',
-    iosClientId: '1097935473525-eclti0oa9tjjm81cr3dqofu193g55506.apps.googleusercontent.com',
-    iosBundleId: 'com.example.capacitaciones',
+    androidClientId: '1097935473525-5bu013kbhuv1gplevq374vvaf8bss0f9.apps.googleusercontent.com',
+    iosClientId: '1097935473525-2ajkfaaclj3n3hs5h06674q0l6qvm0fk.apps.googleusercontent.com',
+    iosBundleId: 'com.example.dashapp',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyA1svOkxcG9iSOh1fWpXfMSLs255ZVK3KI',
-    appId: '1:1097935473525:web:5fb604933f4b69a6dd213c',
+    appId: '1:1097935473525:web:6f7670ceef0c1e03dd213c',
     messagingSenderId: '1097935473525',
     projectId: 'capacitaciones-1adfd',
     authDomain: 'capacitaciones-1adfd.firebaseapp.com',
     databaseURL: 'https://capacitaciones-1adfd-default-rtdb.firebaseio.com',
     storageBucket: 'capacitaciones-1adfd.firebasestorage.app',
-    measurementId: 'G-0NS3P23KLR',
+    measurementId: 'G-7RBNCRSYWX',
   );
 
 }
