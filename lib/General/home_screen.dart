@@ -1586,42 +1586,45 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Drawer(
       backgroundColor: drawerBackground,
-      child: ListView(
-        padding: EdgeInsets.zero,
+      child: Column(
         children: [
           UserAccountsDrawerHeader(
             accountName: Text(currentUser?.displayName ?? 'Usuario'),
             accountEmail: Text(currentUser?.email ?? ''),
             currentAccountPicture: CircleAvatar(
-              backgroundImage:
-                  currentUser?.photoURL != null
-                      ? NetworkImage(currentUser!.photoURL!)
-                      : const AssetImage('assets/ds.png') as ImageProvider,
+              backgroundImage: currentUser?.photoURL != null
+                  ? NetworkImage(currentUser!.photoURL!)
+                  : const AssetImage('assets/ds.png') as ImageProvider,
             ),
             decoration: const BoxDecoration(color: Colors.blueAccent),
           ),
-          const Divider(),
-          _buildDrawerItem(Icons.home, 'Inicio', () {
-            setState(() {
-              _mostrarCursos = false;
-            });
-            Navigator.pop(context);
-          }, drawerTextColor),
-          const Divider(),
-          _buildDrawerItem(Icons.school, 'Capacitaciones', () {
-            setState(() {
-              _mostrarCursos = true;
-            });
-            Navigator.pop(context);
-          }, drawerTextColor),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildDrawerItem(Icons.home, 'Inicio', () {
+                  setState(() {
+                    _mostrarCursos = false;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+                const Divider(),
+                _buildDrawerItem(Icons.school, 'Capacitaciones', () {
+                  setState(() {
+                    _mostrarCursos = true;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+              ],
+            ),
+          ),
           const Divider(),
           _buildDrawerItem(
             Icons.settings,
             'Configuración de Perfil',
-            () => _navigate(const EditProfileScreen()),
+                () => _navigate(const EditProfileScreen()),
             drawerTextColor,
           ),
-
           _buildDrawerItem(
             Icons.logout,
             'Cerrar Sesión',
