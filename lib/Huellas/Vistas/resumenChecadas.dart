@@ -45,6 +45,7 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
   final TextEditingController _maxNominaController = TextEditingController();
   final List<String> tiposFalta = [
     'todos',
+    'sin_registros',
     'sin_entrada',
     'sin_salida',
     'falta_comedor',
@@ -60,7 +61,7 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     'entrada_planta': 'Entrada Planta',
     'salida_planta': 'Salida Planta',
   };
-  final Map<String, String> mapaNombres = {}; // tarjeta → nombre completo
+  final Map<String, String> mapaNombres = {};
   final Map<String, String> mapaReporta = {};
   final Map<String, String> _mapaJefes = {};
 
@@ -94,9 +95,12 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
         return d['entrada_comedor'] == '' || d['salida_comedor'] == '';
       case 'completo':
         return d['entrada_planta'] != '' &&
-            d['entrada_comedor'] != '' &&
-            d['salida_comedor'] != '' &&
             d['salida_planta'] != '';
+      case 'sin_registros':
+        return d['entrada_planta'] == '' &&
+            d['entrada_comedor'] == '' &&
+            d['salida_comedor'] == '' &&
+            d['salida_planta'] == '';
       default:
         return true;
     }
@@ -170,8 +174,8 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
       final tipo = r['tipo'];
       final fechaHora = (r['Reg_FechaHoraRegistro'] as Timestamp).toDate();
       final tarjeta = r['Reg_no'];
-      final nombre = r['Title'];
-      final nomina = mapaTituloANomina[tarjeta] ?? '';
+      final nombre = mapaNombres[tarjeta] ?? r['Title'] ?? '';
+      final nomina = mapaTituloANomina[tarjeta]?? '';
       final hora = DateFormat('HH:mm:ss').format(fechaHora);
 
       if (!tiposValidos.contains(tipo)) continue;
@@ -345,10 +349,10 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     );
   }
 
-
   Future<void> _exportarAExcel() async {
     final excel = Excel.createExcel();
     final Sheet sheet = excel['Checadas'];
+    excel.delete('Sheet1');
 
     final filtroNombreActivo = _filtroNombre.isNotEmpty ? _filtroNombre : 'Todos';
     final filtroFaltaActivo = _filtroFalta.replaceAll('_', ' ').toUpperCase();
@@ -356,19 +360,13 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     final nomMax = _maxNominaController.text.isNotEmpty ? _maxNominaController.text : 'Sin máximo';
     final jefe = _jefeSeleccionado ?? 'Todos';
 
-    CellStyle headerStyle = CellStyle(
-      bold: true,
-      fontSize: 12,
-      horizontalAlign: HorizontalAlign.Center,
-    );
-
     CellStyle titleStyle = CellStyle(
       bold: true,
       fontSize: 14,
+      backgroundColorHex: ExcelColor.cyan,
       horizontalAlign: HorizontalAlign.Left,
     );
 
-    // Título y filtros
     sheet.appendRow([TextCellValue('Resumen de Checadas')]);
     sheet.row(sheet.maxRows - 1).forEach((cell) => cell?.cellStyle = titleStyle);
 
@@ -379,67 +377,139 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     sheet.appendRow([TextCellValue('Nómina mínima:'), TextCellValue(nomMin)]);
     sheet.appendRow([TextCellValue('Nómina máxima:'), TextCellValue(nomMax)]);
     sheet.appendRow([TextCellValue('Jefe seleccionado:'), TextCellValue(jefe)]);
+    sheet.appendRow([TextCellValue(''), TextCellValue('')]);
     sheet.appendRow([]);
 
-    // Encabezado de tabla
-    final headers = ['Fecha', 'Nombre', 'Nómina', 'Entrada Planta', 'Salida Planta'];
+    final fechasUnicas = resumen.keys.toList()..sort();
+    final headers = <String>['Nombre', 'Nómina'];
+    final Map<String, CellStyle> estilosPorFecha = {};
+
+    for (int i = 0; i < fechasUnicas.length; i++) {
+      final fecha = fechasUnicas[i];
+
+      final estilo = CellStyle(
+        bold: true,
+        fontSize: 12,
+        horizontalAlign: HorizontalAlign.Center,
+        verticalAlign: VerticalAlign.Center,
+      );
+
+      estilosPorFecha[fecha] = estilo;
+
+      headers.add('$fecha\nEntrada Planta');
+      headers.add('$fecha\nSalida Planta');
+    }
+
     final headerCells = headers.map((e) => TextCellValue(e)).toList();
     sheet.appendRow(headerCells);
-    sheet.row(sheet.maxRows - 1).forEach((cell) => cell?.cellStyle = headerStyle);
 
-    // Datos filtrados
-    for (final fechaEntry in _fechasPaginadas) {
+    final lastHeaderRow = sheet.maxRows - 1;
+    for (int i = 2; i < headers.length; i++) {
+      final fechaIndex = (i - 2) ~/ 2;
+      final fecha = fechasUnicas[fechaIndex];
+      sheet
+          .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: lastHeaderRow))
+          ?.cellStyle = estilosPorFecha[fecha];
+    }
+
+    final Map<String, Map<String, dynamic>> empleadosUnicos = {};
+
+    for (final fechaEntry in resumen.entries) {
       final fecha = fechaEntry.key;
       final personas = fechaEntry.value;
 
-      final personasOrdenadas = personas.entries.toList()
-        ..sort((a, b) {
-          dynamic valorA = a.value[_campoOrdenamiento];
-          dynamic valorB = b.value[_campoOrdenamiento];
-          if (_campoOrdenamiento == 'nomina') {
-            final intA = int.tryParse(valorA ?? '') ?? 0;
-            final intB = int.tryParse(valorB ?? '') ?? 0;
-            return _ordenAscendente ? intA.compareTo(intB) : intB.compareTo(intA);
-          } else if (_campoOrdenamiento == 'entrada_planta' || _campoOrdenamiento == 'salida_planta') {
-            final horaA = (valorA != null && valorA != '') ? valorA : '99:99:99';
-            final horaB = (valorB != null && valorB != '') ? valorB : '99:99:99';
-            return _ordenAscendente ? horaA.compareTo(horaB) : horaB.compareTo(horaA);
-          }
-          return 0;
-        });
+      for (final personaEntry in personas.entries) {
+        final d = personaEntry.value;
+        final nombre = d['nombre']?.toString() ?? '';
+        final nomina = d['nomina']?.toString() ?? '';
 
-      final filtradas = personasOrdenadas.where((p) {
-        final d = p.value;
         final coincideNombre = _filtroNombre.isEmpty ||
-            d['nombre'].toString().toLowerCase().contains(_filtroNombre) ||
-            d['nomina'].toString().toLowerCase().contains(_filtroNombre);
+            nombre.toLowerCase().contains(_filtroNombre) ||
+            nomina.toLowerCase().contains(_filtroNombre);
 
         final cumpleFalta = _cumpleFiltroFalta(d);
-        final nomina = int.tryParse(d['nomina'].toString()) ?? 0;
+        final nominaInt = int.tryParse(nomina) ?? 0;
         final minNom = int.tryParse(_minNominaController.text);
         final maxNom = int.tryParse(_maxNominaController.text);
-        final enRango = (minNom == null || nomina >= minNom) && (maxNom == null || nomina <= maxNom);
+        final enRango = (minNom == null || nominaInt >= minNom) && (maxNom == null || nominaInt <= maxNom);
 
-        final seleccionado = _usuariosSeleccionados.isEmpty || _usuariosSeleccionados.contains(d['nombre']);
+        final seleccionado = _usuariosSeleccionados.isEmpty || _usuariosSeleccionados.contains(nombre);
         final jefeNominaSeleccionado = _jefeSeleccionado != null ? _mapaJefes[_jefeSeleccionado] : null;
         final perteneceAlJefe = jefeNominaSeleccionado == null ||
-            d['nomina'] == jefeNominaSeleccionado ||
+            nomina == jefeNominaSeleccionado ||
             d['reporta'] == jefeNominaSeleccionado;
 
-        return coincideNombre && cumpleFalta && enRango && seleccionado && perteneceAlJefe;
-      });
+        if (coincideNombre && cumpleFalta && enRango && seleccionado && perteneceAlJefe) {
+          final key = '${nombre.trim().toLowerCase()}|$nomina';
 
-      for (final p in filtradas) {
-        final d = p.value;
-        sheet.appendRow([
-          TextCellValue(fecha),
-          TextCellValue(d['nombre'] ?? ''),
-          TextCellValue(d['nomina'] ?? ''),
-          TextCellValue(d['entrada_planta'] ?? ''),
-          TextCellValue(d['salida_planta'] ?? ''),
-        ]);
+          if (!empleadosUnicos.containsKey(key)) {
+            empleadosUnicos[key] = {
+              'nombre': nombre.trim(),
+              'nomina': nomina,
+              'fechas': <String, Map<String, String>>{}
+            };
+          }
+
+          empleadosUnicos[key]!['fechas'][fecha] = {
+            'entrada_planta': d['entrada_planta']?.toString() ?? '',
+            'salida_planta': d['salida_planta']?.toString() ?? '',
+          };
+        }
       }
     }
+
+    final empleadosOrdenados = empleadosUnicos.entries.toList()
+      ..sort((a, b) {
+        if (_campoOrdenamiento == 'nomina') {
+          final intA = int.tryParse(a.value['nomina']) ?? 0;
+          final intB = int.tryParse(b.value['nomina']) ?? 0;
+          return _ordenAscendente ? intA.compareTo(intB) : intB.compareTo(intA);
+        } else {
+          final nombreA = a.value['nombre'].toString();
+          final nombreB = b.value['nombre'].toString();
+          return _ordenAscendente ? nombreA.compareTo(nombreB) : nombreB.compareTo(nombreA);
+        }
+      });
+
+    for (final empleadoEntry in empleadosOrdenados) {
+      final empleado = empleadoEntry.value;
+      final row = <CellValue>[
+        TextCellValue(empleado['nombre']),
+        TextCellValue(empleado['nomina']),
+      ];
+
+      for (final fecha in fechasUnicas) {
+        final fechaData = empleado['fechas'][fecha];
+        final entrada = fechaData?['entrada_planta'];
+        final salida = fechaData?['salida_planta'];
+
+        final entradaText = (entrada != null && entrada.isNotEmpty) ? '$entrada' : '';
+        final salidaText = (salida != null && salida.isNotEmpty) ? '$salida' : '';
+
+        row.add(TextCellValue(entradaText));
+        row.add(TextCellValue(salidaText));
+      }
+
+      sheet.appendRow(row);
+
+      final currentRow = sheet.maxRows - 1;
+      for (int i = 0; i < fechasUnicas.length; i++) {
+        final estiloDato = CellStyle(
+          horizontalAlign: HorizontalAlign.Center,
+          verticalAlign: VerticalAlign.Center,
+          fontSize: 11,
+        );
+
+        final colEntrada = 2 + (i * 2);
+        final colSalida = colEntrada + 1;
+
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: colEntrada, rowIndex: currentRow))
+            ?.cellStyle = estiloDato;
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: colSalida, rowIndex: currentRow))
+            ?.cellStyle = estiloDato;
+      }
+    }
+
 
     final List<int>? bytes = excel.encode();
     if (bytes == null) return;
@@ -458,10 +528,23 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
       final filePath = '${directory.path}/$fileName';
       final file = io.File(filePath);
       await file.writeAsBytes(bytes, flush: true);
-
       await Share.shareXFiles([XFile(filePath)], text: 'Resumen de checadas generado desde la app');
     }
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   @override
@@ -571,35 +654,26 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
                                           const SizedBox(width: 12),
                                           Expanded(
                                             flex: 2,
-                                            child: DropdownButtonFormField<
-                                              String
-                                            >(
+                                            child: DropdownButtonFormField<String>(
                                               value: _filtroFalta,
                                               decoration: const InputDecoration(
                                                 labelText: 'Tipo de Falta',
                                                 border: OutlineInputBorder(),
                                               ),
-                                              items:
-                                                  tiposFalta.map((tipo) {
-                                                    return DropdownMenuItem(
-                                                      value: tipo,
-                                                      child: Text(
-                                                        tipo
-                                                            .replaceAll(
-                                                              '_',
-                                                              ' ',
-                                                            )
-                                                            .toUpperCase(),
-                                                      ),
-                                                    );
-                                                  }).toList(),
-                                              onChanged:
-                                                  (value) => setState(
-                                                    () =>
-                                                        _filtroFalta =
-                                                            value ?? 'todos',
+                                              items: tiposFalta.map((tipo) {
+                                                return DropdownMenuItem(
+                                                  value: tipo,
+                                                  child: Text(
+                                                    tipo
+                                                        .replaceAll('_', ' ')
+                                                        .replaceAll('sin_registros', 'Sin Registros')
+                                                        .toUpperCase(),
                                                   ),
+                                                );
+                                              }).toList(),
+                                              onChanged: (value) => setState(() => _filtroFalta = value ?? 'todos'),
                                             ),
+
                                           ),
                                         ],
                                       ),
@@ -1264,3 +1338,4 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     );
   }
 }
+
