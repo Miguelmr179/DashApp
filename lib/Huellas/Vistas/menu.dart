@@ -20,6 +20,7 @@ class MenuPage extends StatefulWidget {
 }
 
 class _MenuPageState extends State<MenuPage> {
+
   bool _cargandoUsuarios = false;
 
   @override
@@ -306,16 +307,10 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
-  ButtonStyle _buttonStyle() {
-    return ElevatedButton.styleFrom(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-      elevation: 5,
-    );
-  }
 }
 
 class SubmenuConfiguracion extends StatelessWidget {
+
   const SubmenuConfiguracion({super.key});
 
   @override

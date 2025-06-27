@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class GaleriaEventoScreen extends StatelessWidget {
+
   final DateTime fechaEvento;
   final String eventoId;
 

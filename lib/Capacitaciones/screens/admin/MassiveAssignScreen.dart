@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:dashapp/Capacitaciones/services/theme_notifier.dart';
 
 class MassiveAssignScreen extends StatefulWidget {
+
   final List<String> categories;
+
   const MassiveAssignScreen({Key? key, required this.categories}) : super(key: key);
 
   @override
@@ -11,15 +13,19 @@ class MassiveAssignScreen extends StatefulWidget {
 }
 
 class _MassiveAssignScreenState extends State<MassiveAssignScreen> {
+
   String? _selectedArea;
   String? _selectedCourse;
+
   final Set<String> _selectedUserIds = {};
+  final TextEditingController _searchController = TextEditingController();
+
   List<String> _areas = [];
   List<String> _coursesByArea = [];
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _users = [];
   List<QueryDocumentSnapshot<Map<String, dynamic>>> _filteredUsers = [];
+
   bool _isLoading = true;
-  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -50,11 +56,9 @@ class _MassiveAssignScreenState extends State<MassiveAssignScreen> {
 
   Future<void> _loadUsers() async {
     final snapshot = await FirebaseFirestore.instance.collection('users').get();
-    // Filtrar: Solo usuarios que tienen email (puedes poner más condiciones si lo deseas)
     final filtered = snapshot.docs.where((doc) {
       final data = doc.data();
       final email = (data['email'] ?? '').toString().trim();
-      // Si quieres obligar también nombre y nómina, agrega aquí las validaciones.
       return email.isNotEmpty;
     }).toList();
 
@@ -62,21 +66,6 @@ class _MassiveAssignScreenState extends State<MassiveAssignScreen> {
       _users = filtered;
       _filteredUsers = _users;
       _isLoading = false;
-    });
-  }
-
-  void _filterUsers(String query) {
-    final lowerQuery = query.toLowerCase();
-    setState(() {
-      _filteredUsers = _users.where((doc) {
-        final data = doc.data();
-        final email = (data['email'] ?? '').toString().toLowerCase();
-        final nombre = (data['fullName'] ?? '').toString().toLowerCase();
-        final nomina = (data['nomina'] ?? '').toString().toLowerCase();
-        return email.contains(lowerQuery) ||
-            nombre.contains(lowerQuery) ||
-            nomina.contains(lowerQuery);
-      }).toList();
     });
   }
 
@@ -110,6 +99,21 @@ class _MassiveAssignScreenState extends State<MassiveAssignScreen> {
       );
       Navigator.pop(context);
     }
+  }
+
+  void _filterUsers(String query) {
+    final lowerQuery = query.toLowerCase();
+    setState(() {
+      _filteredUsers = _users.where((doc) {
+        final data = doc.data();
+        final email = (data['email'] ?? '').toString().toLowerCase();
+        final nombre = (data['fullName'] ?? '').toString().toLowerCase();
+        final nomina = (data['nomina'] ?? '').toString().toLowerCase();
+        return email.contains(lowerQuery) ||
+            nombre.contains(lowerQuery) ||
+            nomina.contains(lowerQuery);
+      }).toList();
+    });
   }
 
   @override

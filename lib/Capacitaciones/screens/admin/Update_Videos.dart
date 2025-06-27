@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dashapp/Capacitaciones/models/videos.dart';
 
 class UpdateVideoScreen extends StatefulWidget {
+
   final String videoId;
 
   const UpdateVideoScreen({super.key, required this.videoId});
@@ -17,23 +18,28 @@ class UpdateVideoScreen extends StatefulWidget {
 final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
 class _UpdateVideoScreenState extends State<UpdateVideoScreen> {
+
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+
   String? _selectedArea;
-  File? _selectedFile;
   String _fileType = 'Video';
-  Video? _video;
   String? _selectedCourse;
   String? _selectedLesson;
+
+  File? _selectedFile;
+
+  Video? _video;
+
   List<String> _courses = [];
   List<String> _lessons = [];
+  List<String> _categories = [];
+
   bool _isLoadingCourses = true;
   bool _isLoadingLessons = true;
   bool _isAddingNewCourse = false;
   bool _isAddingNewLesson = false;
-
-  List<String> _categories = [];
   bool _isLoadingCategories = true;
 
   final List<String> _fileTypes = ["Video", "Imagen", "Archivo"];
@@ -43,6 +49,14 @@ class _UpdateVideoScreenState extends State<UpdateVideoScreen> {
     super.initState();
     _loadCategories().then((_) => _fetchVideo());
   }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
 
   Future<void> _loadCategories() async {
     try {
@@ -118,7 +132,6 @@ class _UpdateVideoScreenState extends State<UpdateVideoScreen> {
     try {
       final video = await VideoService().getVideoById(widget.videoId);
 
-      // Cargar cursos si no están listos
       if (_isLoadingCourses) {
         await _loadCourses();
       }
@@ -132,7 +145,6 @@ class _UpdateVideoScreenState extends State<UpdateVideoScreen> {
         _selectedLesson = video.lesson;
       });
 
-      // Cargar lecciones si tenemos curso
       if (video.course != null) {
         await _loadLessonsForCourse(video.course!);
       }
@@ -341,13 +353,6 @@ class _UpdateVideoScreenState extends State<UpdateVideoScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
   }
 
   @override

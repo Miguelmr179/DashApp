@@ -10,13 +10,15 @@ class AgregarEventoScreen extends StatefulWidget {
 }
 
 class _AgregarEventoScreenState extends State<AgregarEventoScreen> {
+
   final _formKey = GlobalKey<FormState>();
   final _tituloController = TextEditingController();
   final _descripcionController = TextEditingController();
-  DateTime? _fechaSeleccionada;
-  String? _idEventoEditando;
-
   final Color _primaryColor = Colors.indigo;
+
+  DateTime? _fechaSeleccionada;
+
+  String? _idEventoEditando;
 
   Future<void> _guardarOActualizarEvento() async {
     if (!_formKey.currentState!.validate() || _fechaSeleccionada == null) {
@@ -54,26 +56,6 @@ class _AgregarEventoScreenState extends State<AgregarEventoScreen> {
         SnackBar(content: Text('Error: $e')),
       );
     }
-  }
-
-  void _limpiarFormulario() {
-    _formKey.currentState?.reset();
-    _tituloController.clear();
-    _descripcionController.clear();
-    setState(() {
-      _fechaSeleccionada = null;
-      _idEventoEditando = null;
-    });
-  }
-
-  void _cargarEventoParaEditar(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    setState(() {
-      _tituloController.text = data['titulo'] ?? '';
-      _descripcionController.text = data['descripcion'] ?? '';
-      _fechaSeleccionada = (data['fecha'] as Timestamp).toDate();
-      _idEventoEditando = doc.id;
-    });
   }
 
   Future<void> _eliminarEvento(String id) async {
@@ -124,6 +106,26 @@ class _AgregarEventoScreenState extends State<AgregarEventoScreen> {
         _fechaSeleccionada = fecha;
       });
     }
+  }
+
+  void _limpiarFormulario() {
+    _formKey.currentState?.reset();
+    _tituloController.clear();
+    _descripcionController.clear();
+    setState(() {
+      _fechaSeleccionada = null;
+      _idEventoEditando = null;
+    });
+  }
+
+  void _cargarEventoParaEditar(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    setState(() {
+      _tituloController.text = data['titulo'] ?? '';
+      _descripcionController.text = data['descripcion'] ?? '';
+      _fechaSeleccionada = (data['fecha'] as Timestamp).toDate();
+      _idEventoEditando = doc.id;
+    });
   }
 
   Widget _buildFormulario() {

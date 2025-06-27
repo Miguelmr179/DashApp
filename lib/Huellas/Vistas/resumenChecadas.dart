@@ -1,15 +1,14 @@
 import 'dart:async';
-import 'dart:io' as html;
 import 'dart:io' as io;
 import 'package:dashapp/Huellas/Vistas/EditarRegistroScreen.dart';
 import 'package:excel/excel.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_file/open_file.dart';
 import 'package:share_plus/share_plus.dart';
-
+import 'package:universal_html/html.dart' as html;
 
 class ResumenChecadasScreen extends StatefulWidget {
   const ResumenChecadasScreen({super.key});
@@ -19,23 +18,14 @@ class ResumenChecadasScreen extends StatefulWidget {
 }
 
 class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
-  Map<String, Map<String, dynamic>> resumen = {};
-  Map<String, String> mapaTituloANomina = {};
-  DateTime? _fechaInicio;
-  DateTime? _fechaFin;
-
-  String _filtroNombre = '';
-  String _filtroFalta = 'todos';
-  final TextEditingController _minNominaController = TextEditingController();
-  final TextEditingController _maxNominaController = TextEditingController();
-  List<String> _usuariosSeleccionados = [];
 
   bool _ordenAscendente = false;
   bool _cargando = false;
   bool _mostrarFiltros = true;
 
   int _paginaActual = 0;
-  final int _elementosPorPagina = 1;
+  int get _totalPaginas =>
+      (resumen.length / _elementosPorPagina).ceil().clamp(1, 999);
 
   List<MapEntry<String, Map<String, dynamic>>> get _fechasPaginadas {
     final lista = resumen.entries.toList();
@@ -43,10 +33,16 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     final fin = (inicio + _elementosPorPagina).clamp(0, lista.length);
     return lista.sublist(inicio, fin);
   }
+  List<String> _usuariosSeleccionados = [];
 
-  int get _totalPaginas =>
-      (resumen.length / _elementosPorPagina).ceil().clamp(1, 999);
+  String _filtroNombre = '';
+  String _filtroFalta = 'todos';
+  String? _jefeSeleccionado;
+  String _campoOrdenamiento = 'nomina';
 
+  final int _elementosPorPagina = 1;
+  final TextEditingController _minNominaController = TextEditingController();
+  final TextEditingController _maxNominaController = TextEditingController();
   final List<String> tiposFalta = [
     'todos',
     'sin_entrada',
@@ -54,28 +50,25 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     'falta_comedor',
     'completo',
   ];
-
-  String _campoOrdenamiento = 'nomina';
   final List<String> _opcionesOrdenamiento = [
     'nomina',
     'entrada_planta',
     'salida_planta',
   ];
-
   final Map<String, String> _etiquetasOrdenamiento = {
     'nomina': 'Nómina',
     'entrada_planta': 'Entrada Planta',
     'salida_planta': 'Salida Planta',
   };
-
   final Map<String, String> mapaNombres = {}; // tarjeta → nombre completo
+  final Map<String, String> mapaReporta = {};
+  final Map<String, String> _mapaJefes = {};
 
-  String? _jefeSeleccionado;
+  DateTime? _fechaInicio;
+  DateTime? _fechaFin;
 
-  final Map<String, String> _mapaJefes = {}; // nombre → nómina
-
-  final Map<String, String> mapaReporta =
-      {}; // nomina del empleado → nomina del jefe
+  Map<String, Map<String, dynamic>> resumen = {};
+  Map<String, String> mapaTituloANomina = {};
 
   @override
   void initState() {
@@ -83,20 +76,12 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     final hoy = DateTime.now();
     _fechaInicio = hoy.subtract(const Duration(days: 1));
     _fechaFin = hoy;
+
     _cargarResumen();
   }
 
   void _cambiarOrden() {
     setState(() => _ordenAscendente = !_ordenAscendente);
-  }
-
-  DateTime _ajustarFechaLaboral(DateTime fechaHora, String tipo) {
-    if (tipo == 'salida_planta' && fechaHora.hour >= 5 && fechaHora.hour < 7) {
-      return fechaHora.subtract(const Duration(days: 1));
-    }
-    return fechaHora.hour < 5
-        ? fechaHora.subtract(const Duration(days: 1))
-        : fechaHora;
   }
 
   bool _cumpleFiltroFalta(Map<String, dynamic> d) {
@@ -122,10 +107,14 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
 
     if (_fechaInicio == null || _fechaFin == null) return;
 
+    // Convertimos las fechas a formato yyyy-MM-dd para comparación de tipo String
+    final fechaInicioStr = DateFormat("yyyy-MM-dd").format(_fechaInicio!);
+    final fechaFinStr = DateFormat("yyyy-MM-dd").format(_fechaFin!);
+
     mapaTituloANomina.clear();
 
-    final usuariosSnap =
-        await FirebaseFirestore.instance.collection('Usuarios').get();
+    // Cargar usuarios
+    final usuariosSnap = await FirebaseFirestore.instance.collection('Usuarios').get();
 
     for (final doc in usuariosSnap.docs) {
       final data = doc.data();
@@ -137,21 +126,18 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
         if (tarjeta.isNotEmpty && nomina.isNotEmpty) {
           mapaTituloANomina[tarjeta] = nomina;
 
-          // Nuevo: guarda también nombre para mostrarlo si no hay checada
           if (!mapaNombres.containsKey(tarjeta)) {
             mapaNombres[tarjeta] =
                 '${data['nombre'] ?? ''} ${data['apellidos'] ?? ''}'.trim();
           }
 
-          // Mapea relación de jerarquía
           if (data['reporta'] != null) {
             mapaReporta[nomina] = data['reporta'].toString();
           }
 
           if ((data['jefe']?.toString() ?? '') == "1") {
             final nombreCompleto =
-                '${data['nombre']?.toString().trim() ?? ''} ${data['apellidos']?.toString().trim() ?? ''}'
-                    .trim();
+            '${data['nombre']?.toString().trim() ?? ''} ${data['apellidos']?.toString().trim() ?? ''}'.trim();
             if (nombreCompleto.isNotEmpty) {
               _mapaJefes[nombreCompleto] = nomina;
             }
@@ -161,20 +147,13 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     }
 
     debugPrint('Total jefes encontrados: ${_mapaJefes.length}');
-    final snapshot =
-        await FirebaseFirestore.instance
-            .collection('checadas')
-            .where(
-              'fecha',
-              isGreaterThanOrEqualTo: DateFormat(
-                'yyyy-MM-dd',
-              ).format(_fechaInicio!),
-            )
-            .where(
-              'fecha',
-              isLessThanOrEqualTo: DateFormat('yyyy-MM-dd').format(_fechaFin!),
-            )
-            .get();
+
+    // 🔍 Filtro confiable basado en campo 'fecha' que ya viene ajustado
+    final snapshot = await FirebaseFirestore.instance
+        .collection('checadas')
+        .where('fecha', isGreaterThanOrEqualTo: fechaInicioStr)
+        .where('fecha', isLessThanOrEqualTo: fechaFinStr)
+        .get();
 
     final registros = snapshot.docs.map((doc) => doc.data()).toList();
     final Map<String, Map<String, Map<String, dynamic>>> agrupado = {};
@@ -187,11 +166,9 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     ];
 
     for (final r in registros) {
-      final fechaHora = (r['Reg_FechaHoraRegistro'] as Timestamp).toDate();
+      final fechaStr = r['fecha']; // Ya está ajustada y filtrada
       final tipo = r['tipo'];
-      final fechaLaboral = _ajustarFechaLaboral(fechaHora, tipo);
-      final fechaKey = DateFormat('yyyy-MM-dd').format(fechaLaboral);
-
+      final fechaHora = (r['Reg_FechaHoraRegistro'] as Timestamp).toDate();
       final tarjeta = r['Reg_no'];
       final nombre = r['Title'];
       final nomina = mapaTituloANomina[tarjeta] ?? '';
@@ -199,8 +176,8 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
 
       if (!tiposValidos.contains(tipo)) continue;
 
-      agrupado[fechaKey] ??= {};
-      agrupado[fechaKey]![tarjeta] ??= {
+      agrupado[fechaStr] ??= {};
+      agrupado[fechaStr]![tarjeta] ??= {
         'nombre': nombre,
         'tarjeta': tarjeta,
         'nomina': nomina,
@@ -214,14 +191,15 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
       if (r.containsKey('observaciones') &&
           r['observaciones'] != null &&
           r['observaciones'].toString().trim().isNotEmpty) {
-        agrupado[fechaKey]![tarjeta]!['observaciones'] ??= r['observaciones'];
+        agrupado[fechaStr]![tarjeta]!['observaciones'] ??= r['observaciones'];
       }
 
-      if (agrupado[fechaKey]![tarjeta]![tipo] == '') {
-        agrupado[fechaKey]![tarjeta]![tipo] = hora;
+      if (agrupado[fechaStr]![tarjeta]![tipo] == '') {
+        agrupado[fechaStr]![tarjeta]![tipo] = hora;
       }
     }
 
+    // Asegurar que todos los días del rango estén presentes aunque no tengan registros
     final dias = <String>[];
     DateTime fecha = _fechaInicio!;
     while (!fecha.isAfter(_fechaFin!)) {
@@ -235,7 +213,6 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
         final tarjeta = entry.key;
         final nomina = entry.value;
 
-        // Evitar sobreescribir si ya tiene registro
         agrupado[dia]![tarjeta] ??= {
           'nombre': mapaNombres[tarjeta] ?? '',
           'tarjeta': tarjeta,
@@ -379,6 +356,23 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     final nomMax = _maxNominaController.text.isNotEmpty ? _maxNominaController.text : 'Sin máximo';
     final jefe = _jefeSeleccionado ?? 'Todos';
 
+    CellStyle headerStyle = CellStyle(
+      bold: true,
+      fontSize: 12,
+      horizontalAlign: HorizontalAlign.Center,
+    );
+
+    CellStyle titleStyle = CellStyle(
+      bold: true,
+      fontSize: 14,
+      horizontalAlign: HorizontalAlign.Left,
+    );
+
+    // Título y filtros
+    sheet.appendRow([TextCellValue('Resumen de Checadas')]);
+    sheet.row(sheet.maxRows - 1).forEach((cell) => cell?.cellStyle = titleStyle);
+
+    sheet.appendRow([]);
     sheet.appendRow([TextCellValue('Filtros aplicados:')]);
     sheet.appendRow([TextCellValue('Nombre/Nómina:'), TextCellValue(filtroNombreActivo)]);
     sheet.appendRow([TextCellValue('Tipo de Falta:'), TextCellValue(filtroFaltaActivo)]);
@@ -387,9 +381,13 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     sheet.appendRow([TextCellValue('Jefe seleccionado:'), TextCellValue(jefe)]);
     sheet.appendRow([]);
 
+    // Encabezado de tabla
     final headers = ['Fecha', 'Nombre', 'Nómina', 'Entrada Planta', 'Salida Planta'];
-    sheet.appendRow(headers.map((e) => TextCellValue(e)).toList());
+    final headerCells = headers.map((e) => TextCellValue(e)).toList();
+    sheet.appendRow(headerCells);
+    sheet.row(sheet.maxRows - 1).forEach((cell) => cell?.cellStyle = headerStyle);
 
+    // Datos filtrados
     for (final fechaEntry in _fechasPaginadas) {
       final fecha = fechaEntry.key;
       final personas = fechaEntry.value;
@@ -446,12 +444,23 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     final List<int>? bytes = excel.encode();
     if (bytes == null) return;
 
-    final directory = await getTemporaryDirectory();
-    final filePath = '${directory.path}/Resumen_Checadas.xlsx';
-    final file = io.File(filePath);
-    await file.writeAsBytes(bytes, flush: true);
+    final fileName = 'Resumen_Checadas.xlsx';
 
-    await Share.shareXFiles([XFile(filePath)], text: 'Resumen de checadas generado desde la app');
+    if (kIsWeb) {
+      final blob = html.Blob([Uint8List.fromList(bytes)], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      final url = html.Url.createObjectUrlFromBlob(blob);
+      final anchor = html.AnchorElement(href: url)
+        ..setAttribute("download", fileName)
+        ..click();
+      html.Url.revokeObjectUrl(url);
+    } else {
+      final directory = await getTemporaryDirectory();
+      final filePath = '${directory.path}/$fileName';
+      final file = io.File(filePath);
+      await file.writeAsBytes(bytes, flush: true);
+
+      await Share.shareXFiles([XFile(filePath)], text: 'Resumen de checadas generado desde la app');
+    }
   }
 
 

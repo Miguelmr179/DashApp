@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class CheckinService {
+
   Timer? _timer;
   String _ultimaHoraEjecutada = '';
 
@@ -196,7 +197,6 @@ class CheckinService {
       Navigator.of(context, rootNavigator: true).pop();
     });
   }
-
 
   void _showPopup(BuildContext context, String msg) {
     showGeneralDialog(

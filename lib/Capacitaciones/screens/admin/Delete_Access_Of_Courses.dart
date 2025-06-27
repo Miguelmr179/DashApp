@@ -10,10 +10,28 @@ class ViewCourseAccessScreen extends StatefulWidget {
 }
 
 class _ViewCourseAccessScreenState extends State<ViewCourseAccessScreen> {
+
   late Future<Map<String, Map<String, dynamic>>> _usersFuture;
   late Future<List<Map<String, dynamic>>> _accessFuture;
+
   String _searchQuery = '';
+
   List<Map<String, dynamic>> _allAccesses = [];
+  List<Map<String, dynamic>> _filterAccesses(String query) {
+    if (query.isEmpty) return _allAccesses;
+    final lowerQuery = query.toLowerCase();
+    return _allAccesses.where((access) {
+      final uid = access['uid'];
+      final user = _userData[uid] ?? {};
+      final email = (user['email'] ?? '').toString().toLowerCase();
+      final fullName = (user['fullName'] ?? '').toString().toLowerCase();
+      final nomina = (user['nomina'] ?? '').toString().toLowerCase();
+      return email.contains(lowerQuery) ||
+          fullName.contains(lowerQuery) ||
+          nomina.contains(lowerQuery);
+    }).toList();
+  }
+
   Map<String, Map<String, dynamic>> _userData = {}; // uid -> {email, fullName, nomina}
 
   @override
@@ -96,21 +114,6 @@ class _ViewCourseAccessScreenState extends State<ViewCourseAccessScreen> {
         ],
       ),
     );
-  }
-
-  List<Map<String, dynamic>> _filterAccesses(String query) {
-    if (query.isEmpty) return _allAccesses;
-    final lowerQuery = query.toLowerCase();
-    return _allAccesses.where((access) {
-      final uid = access['uid'];
-      final user = _userData[uid] ?? {};
-      final email = (user['email'] ?? '').toString().toLowerCase();
-      final fullName = (user['fullName'] ?? '').toString().toLowerCase();
-      final nomina = (user['nomina'] ?? '').toString().toLowerCase();
-      return email.contains(lowerQuery) ||
-          fullName.contains(lowerQuery) ||
-          nomina.contains(lowerQuery);
-    }).toList();
   }
 
   @override

@@ -12,7 +12,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dashapp/General/galeria_Eventos.dart';
 
 class HomeScreen extends StatefulWidget {
+
   final String role;
+
   const HomeScreen({super.key, required this.role});
 
   @override
@@ -20,21 +22,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+
   late PageController _pageController;
+
   Timer? _autoPageTimer;
 
   final currentUser = FirebaseAuth.instance.currentUser;
+
   bool _mostrarCursos = false;
-  Future<void> _logout() async {
-    await FirebaseAuth.instance.signOut();
-    if (mounted) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (Route<dynamic> route) => false,
-      );
-    }
-  }
 
   int _lastPageCount = 1;
 
@@ -47,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (_pageController.hasClients) {
         final nextPage = _pageController.page!.round() + 1;
         _pageController.animateToPage(
-          (nextPage % (_lastPageCount == 0 ? 1 : _lastPageCount)) as int,
+          (nextPage % (_lastPageCount == 0 ? 1 : _lastPageCount)),
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOut,
         );
@@ -60,6 +55,17 @@ class _HomeScreenState extends State<HomeScreen> {
     _autoPageTimer?.cancel();
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (mounted) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (Route<dynamic> route) => false,
+      );
+    }
   }
 
   void _openNotificationsScreen() {

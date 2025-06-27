@@ -10,9 +10,11 @@ class AdminSendNotificationScreen extends StatefulWidget {
 }
 
 class _AdminSendNotificationScreenState extends State<AdminSendNotificationScreen> {
+
   String? selectedUid;
   String message = '';
   String type = 'alert';
+
   bool sending = false;
 
   Future<void> sendNotification() async {
@@ -74,7 +76,6 @@ class _AdminSendNotificationScreenState extends State<AdminSendNotificationScree
 
     setState(() => sending = false);
   }
-
 
   @override
   Widget build(BuildContext context) {

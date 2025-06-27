@@ -17,6 +17,7 @@ class RelojCOM extends StatefulWidget {
 }
 
 class _RelojCOMState extends State<RelojCOM> {
+
   final TextEditingController _numberController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   final CheckinService _checkinService = CheckinService();
@@ -30,7 +31,9 @@ class _RelojCOMState extends State<RelojCOM> {
   bool _cargandoCarrusel = true;
   bool _offline = false;
   bool _campoBloqueado = false;
+
   String? _tipoForzado;
+
   Timer? _desbloqueoTimer;
 
   List<String> _carouselImagesFirebase = [];
@@ -330,7 +333,6 @@ class _RelojCOMState extends State<RelojCOM> {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {

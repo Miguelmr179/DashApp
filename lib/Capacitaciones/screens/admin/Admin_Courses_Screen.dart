@@ -13,11 +13,13 @@ class AdminResourcesScreen extends StatefulWidget {
 }
 
 class _AdminResourcesScreenState extends State<AdminResourcesScreen> {
+
   String? _selectedArea;
   String? _selectedCategory;
+  String? _selectedLesson;
+
   List<String> _areas = [];
   List<String> _categories = [];
-  String? _selectedLesson;
   List<String> _lessons = [];
 
   @override

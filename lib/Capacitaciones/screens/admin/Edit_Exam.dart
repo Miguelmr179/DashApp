@@ -4,7 +4,9 @@ import 'package:dashapp/Capacitaciones/models/ExamModel.dart';
 import 'package:dashapp/Capacitaciones/services/theme_notifier.dart';
 
 class AdminEditExamScreen extends StatefulWidget {
+
   final String categoryId;
+
   const AdminEditExamScreen({Key? key, required this.categoryId})
       : super(key: key);
 
@@ -13,7 +15,9 @@ class AdminEditExamScreen extends StatefulWidget {
 }
 
 class _AdminEditExamScreenState extends State<AdminEditExamScreen> {
+
   ExamModel? _exam;
+
   bool _loading = true;
 
   @override

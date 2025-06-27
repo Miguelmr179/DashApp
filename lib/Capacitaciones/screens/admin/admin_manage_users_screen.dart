@@ -13,14 +13,18 @@ class AdminManageUsersScreen extends StatefulWidget {
 }
 
 class _AdminManageUsersScreenState extends State<AdminManageUsersScreen> {
+
   final AreaService _areaService = AreaService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final List<String> _roles = ['user', 'instructor', 'jefe', 'admin'];
+
   List<String> _areas = [];
+
   String _searchQuery = '';
   String _nominaQuery = '';
   String _nameQuery = '';
   String? _selectedRoleFilter;
-  final List<String> _roles = ['user', 'instructor', 'jefe', 'admin'];
+
   int _activeFilter = 0; // 0 = email, 1 = nómina, 2 = nombre
 
   @override

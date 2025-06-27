@@ -419,7 +419,7 @@ class _LessonsByCourseScreenState extends State<LessonsByCourseScreen>
                                       StreamBuilder<DocumentSnapshot>(
                                         stream:
                                             FirebaseFirestore.instance
-                                                .collection('exam_final_scores')
+                                                .collection('exam_final_scores_temporal')
                                                 .doc(
                                                   '$uid-${widget.course}-$title',
                                                 )

@@ -10,6 +10,7 @@ import 'dart:io' show Platform;
 import '../../services/theme_notifier.dart';
 
 class ExamScreen extends StatefulWidget {
+
   final String category;
   final String examId;
   final String lesson;
@@ -26,15 +27,17 @@ class ExamScreen extends StatefulWidget {
 }
 
 class _ExamScreenState extends State<ExamScreen> with WidgetsBindingObserver {
+
   ExamModel? _exam;
+
   final Map<int, int> _answers = {};
+  final _uid = FirebaseAuth.instance.currentUser!.uid;
+
   int _score = 0;
+
   bool _submitted = false;
   bool _submitting = false;
-  int _totalExamsInCourse = 0;
-  int _totalExamsAccredited = 0;
   bool _isLastExamCompleted = false;
-  final _uid = FirebaseAuth.instance.currentUser!.uid;
 
   @override
   void initState() {
@@ -143,8 +146,189 @@ class _ExamScreenState extends State<ExamScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _submitExam() async {
-    // Aquí va tu lógica existente de envío del examen
+    setState(() {
+      _submitting = true;
+    });
+
+    try {
+      final totalQuestions = _exam!.questions.length;
+      int score = 0;
+
+      List<Map<String, dynamic>> respuestas = [];
+
+      for (int i = 0; i < totalQuestions; i++) {
+        final pregunta = _exam!.questions[i];
+        final respuestaUsuario = _answers[i] ?? -1;
+        final esCorrecta = respuestaUsuario == pregunta.answer;
+
+        if (esCorrecta) score++;
+
+        respuestas.add({
+          'esCorrecta': esCorrecta,
+          'pregunta': pregunta.question,
+          'respuestaCorrecta': pregunta.options[pregunta.answer],
+          'respuestaUsuario': respuestaUsuario >= 0
+              ? pregunta.options[respuestaUsuario]
+              : 'Sin respuesta',
+        });
+      }
+
+      final percentage = ((score / totalQuestions) * 100).round();
+
+      await FirebaseFirestore.instance.collection('exam_results').add({
+        'uid': _uid,
+        'examId': widget.examId,
+        'category': widget.category,
+        'lesson': widget.lesson,
+        'score': score,
+        'total': totalQuestions,
+        'percentage': percentage,
+        'timestamp': DateTime.now(),
+        'respuestas': respuestas,
+      });
+
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(_uid).get();
+      final userEmail = userDoc.data()?['email'] ?? 'Desconocido';
+
+      final adminsSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'admin')
+          .get();
+
+      final batch = FirebaseFirestore.instance.batch();
+      final now = Timestamp.now();
+      final senderUid = FirebaseAuth.instance.currentUser?.uid ?? 'system';
+
+      final passed = percentage >= 80;
+      final tipoNotificacion = passed ? 'success' : 'warning';
+      final mensaje = passed
+          ? '✅ El usuario $userEmail aprobó el examen "${widget.lesson}" (${widget.category}) con $percentage%'
+          : '⚠️ El usuario $userEmail reprobó el examen "${widget.lesson}" (${widget.category}) con $percentage%';
+
+      if (passed) {
+        final temporalData = {
+          'uid': _uid,
+          'course': widget.category,
+          'lesson': widget.lesson,
+          'finalScore': percentage,
+          'timestamp': DateTime.now(),
+        };
+
+        await FirebaseFirestore.instance
+            .collection('exam_final_scores_temporal')
+            .doc('$_uid-${widget.category}-${widget.lesson}')
+            .set(temporalData);
+
+        // ✅ Revisar si ya terminó todos los exámenes del curso
+        final allExamDocs = await FirebaseFirestore.instance
+            .collection('exams')
+            .where('category', isEqualTo: widget.category)
+            .where('isActive', isEqualTo: true)
+            .get();
+
+        final allLessons = allExamDocs.docs.map((doc) => doc['lesson'] as String).toSet();
+
+        final temporalesSnapshot = await FirebaseFirestore.instance
+            .collection('exam_final_scores_temporal')
+            .where('uid', isEqualTo: _uid)
+            .where('course', isEqualTo: widget.category)
+            .get();
+
+        final completadas = temporalesSnapshot.docs.map((doc) => doc['lesson'] as String).toSet();
+
+        final haCompletadoTodo = allLessons.difference(completadas).isEmpty;
+
+        if (haCompletadoTodo) {
+          // Mover datos a colección final
+          for (final doc in temporalesSnapshot.docs) {
+            final data = doc.data();
+            final lesson = data['lesson'];
+            await FirebaseFirestore.instance
+                .collection('exam_final_scores')
+                .doc('$_uid-${widget.category}-$lesson')
+                .set(data);
+
+            await doc.reference.delete();
+          }
+
+          // Cerrar el curso
+          final progressSnapshot = await FirebaseFirestore.instance
+              .collection('course_progress')
+              .where('uid', isEqualTo: _uid)
+              .where('course', isEqualTo: widget.category)
+              .where('closed', isEqualTo: false)
+              .get();
+
+          for (final doc in progressSnapshot.docs) {
+            await doc.reference.update({
+              'closed': true,
+              'endDate': DateTime.now(),
+            });
+          }
+
+          // Limpiar content_views de todo el curso
+          final contents = await FirebaseFirestore.instance
+              .collection('contents')
+              .where('course', isEqualTo: widget.category)
+              .get();
+
+          final contentIds = contents.docs.map((doc) => doc.id).toList();
+
+          if (contentIds.isNotEmpty) {
+            final viewsSnapshot = await FirebaseFirestore.instance
+                .collection('content_views')
+                .where('uid', isEqualTo: _uid)
+                .where('contentId', whereIn: contentIds)
+                .get();
+
+            for (final view in viewsSnapshot.docs) {
+              batch.delete(view.reference);
+            }
+          }
+        }
+      }
+
+      for (final admin in adminsSnapshot.docs) {
+        final notifRef = FirebaseFirestore.instance.collection('notifications').doc();
+        batch.set(notifRef, {
+          'uid': admin.id,
+          'senderUid': senderUid,
+          'message': mensaje,
+          'type': tipoNotificacion,
+          'timestamp': now,
+          'readBySender': false,
+          'readByReceiver': false,
+          'deletedByReceiver': false,
+          'deletedBySender': false,
+        });
+      }
+
+      await batch.commit();
+
+      final remaining = await FirebaseFirestore.instance
+          .collection('exams')
+          .where('category', isEqualTo: widget.category)
+          .where('lesson', isEqualTo: widget.lesson)
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      setState(() {
+        _submitted = true;
+        _score = score;
+        _isLastExamCompleted = remaining.docs.length <= 1;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al enviar el examen: $e')),
+      );
+    } finally {
+      setState(() {
+        _submitting = false;
+      });
+    }
   }
+
+
 
   @override
   Widget build(BuildContext context) {

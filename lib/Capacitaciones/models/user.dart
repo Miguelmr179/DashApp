@@ -3,8 +3,8 @@ class UserModel {
   final String email;
   final String? role;
   final String? area;
-  final String? fullName; // ✅ NUEVO
-  final String? nomina;   // ✅ NUEVO
+  final String? fullName;
+  final String? nomina;
 
   UserModel({
     required this.id,
@@ -21,8 +21,8 @@ class UserModel {
       email: json['email'] as String,
       role: json['role'] as String?,
       area: json['area'] as String?,
-      fullName: json['fullName'] as String?, // ✅ Nuevo campo desde Firestore
-      nomina: json['nomina'] as String?,     // ✅ Nuevo campo desde Firestore
+      fullName: json['fullName'] as String?,
+      nomina: json['nomina'] as String?,
     );
   }
 

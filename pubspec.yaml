@@ -49,6 +49,7 @@ dependencies:
   carousel_slider: ^5.1.1
   flutter_localization: ^0.3.2
   open_file: ^3.5.10
+  universal_html: ^2.2.4
 
 
 

@@ -74,6 +74,7 @@ class Video {
 }
 
 class VideoService {
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<List<Video>> getAllVideos() async {

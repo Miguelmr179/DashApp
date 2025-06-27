@@ -15,6 +15,7 @@ class ManageCourseAccessScreen extends StatefulWidget {
 }
 
 class _ManageCourseAccessScreenState extends State<ManageCourseAccessScreen> {
+
   final TextEditingController _searchController = TextEditingController();
   final Map<String, bool> _expandedTiles = {};
   final Map<String, String?> _selectedAreas = {};
@@ -30,6 +31,28 @@ class _ManageCourseAccessScreenState extends State<ManageCourseAccessScreen> {
     _loadAreasAndCourses();
     _searchController.addListener(() {
       setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> _usersStream() {
+    return FirebaseFirestore.instance.collection('users').snapshots();
+  }
+
+  Stream<List<String>> _userCoursesStream(String uid) {
+    return FirebaseFirestore.instance
+        .collection('authorized_courses')
+        .where('uid', isEqualTo: uid)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => doc.data()['category'] as String)
+          .toList();
     });
   }
 
@@ -51,28 +74,6 @@ class _ManageCourseAccessScreenState extends State<ManageCourseAccessScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Error al cargar datos: $e')));
     }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Stream<QuerySnapshot<Map<String, dynamic>>> _usersStream() {
-    return FirebaseFirestore.instance.collection('users').snapshots();
-  }
-
-  Stream<List<String>> _userCoursesStream(String uid) {
-    return FirebaseFirestore.instance
-        .collection('authorized_courses')
-        .where('uid', isEqualTo: uid)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => doc.data()['category'] as String)
-              .toList();
-        });
   }
 
   Future<void> _assignCourseToUser(String uid, String courseTitle) async {

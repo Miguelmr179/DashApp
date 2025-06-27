@@ -1,7 +1,5 @@
 // ignore_for_file: unused_local_variable
-
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
@@ -19,15 +17,36 @@ class ExamResultsScreen extends StatefulWidget {
 }
 
 class _ExamResultsScreenState extends State<ExamResultsScreen> {
+
   String _searchEmail = '';
   String? _selectedCourse;
   String? _selectedArea;
+
   DateTime? _startDate;
   DateTime? _endDate;
 
   final TextEditingController _searchController = TextEditingController();
 
-  // Modified to return a map with user details
+  bool _matchesFilters(
+      Map<String, dynamic> data,
+      String uid,
+      Map<String, Map<String, String>> userDetails,
+      ) {
+    final userInfo = userDetails[uid] ?? {'email': 'Desconocido', 'fullName': 'Sin nombre', 'nomina': 'Sin nómina'};
+    final email = userInfo['email']?.toLowerCase() ?? '';
+    final fullName = userInfo['fullName']?.toLowerCase() ?? '';
+    if (_selectedCourse != null && data['category'] != _selectedCourse)
+      return false;
+    if (_selectedArea != null && data['area'] != _selectedArea) return false;
+    if (_startDate != null &&
+        (data['timestamp'] as Timestamp).toDate().isBefore(_startDate!))
+      return false;
+    if (_endDate != null &&
+        (data['timestamp'] as Timestamp).toDate().isAfter(_endDate!))
+      return false;
+    return true;
+  }
+
   Future<Map<String, Map<String, String>>> _getUserDetails() async {
     final usersSnapshot = await FirebaseFirestore.instance.collection('users').get();
     return {
@@ -50,24 +69,32 @@ class _ExamResultsScreenState extends State<ExamResultsScreen> {
     return snapshot.docs.map((doc) => doc['name'].toString()).toList();
   }
 
-  bool _matchesFilters(
-      Map<String, dynamic> data,
-      String uid,
-      Map<String, Map<String, String>> userDetails,
-      ) {
-    final userInfo = userDetails[uid] ?? {'email': 'Desconocido', 'fullName': 'Sin nombre', 'nomina': 'Sin nómina'};
-    final email = userInfo['email']?.toLowerCase() ?? '';
-    final fullName = userInfo['fullName']?.toLowerCase() ?? '';
-        if (_selectedCourse != null && data['category'] != _selectedCourse)
-      return false;
-    if (_selectedArea != null && data['area'] != _selectedArea) return false;
-    if (_startDate != null &&
-        (data['timestamp'] as Timestamp).toDate().isBefore(_startDate!))
-      return false;
-    if (_endDate != null &&
-        (data['timestamp'] as Timestamp).toDate().isAfter(_endDate!))
-      return false;
-    return true;
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2022),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _startDate = DateTime(
+          picked.start.year,
+          picked.start.month,
+          picked.start.day,
+          0,
+          0,
+          0,
+        );
+        _endDate = DateTime(
+          picked.end.year,
+          picked.end.month,
+          picked.end.day,
+          23,
+          59,
+          59,
+        );
+      });
+    }
   }
 
   Future<void> _exportToPDF(
@@ -149,66 +176,6 @@ class _ExamResultsScreenState extends State<ExamResultsScreen> {
 
     if (!kIsWeb) {
       await Printing.layoutPdf(onLayout: (format) async => bytes);
-    }
-  }
-
-  pw.Widget _styledPdfTableFromDocs(
-      List<QueryDocumentSnapshot> docs,
-      Map<String, Map<String, String>> userDetails,
-      ) {
-    return pw.Table.fromTextArray(
-      border: pw.TableBorder.all(width: 0.5, color: PdfColors.grey),
-      headerStyle: pw.TextStyle(
-        fontWeight: pw.FontWeight.bold,
-        color: PdfColors.white,
-      ),
-      headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey800),
-      cellAlignment: pw.Alignment.centerLeft,
-      cellStyle: const pw.TextStyle(fontSize: 10),
-      headers: ['Nombre', 'Nómina', 'Curso', 'Lección', 'Score', 'Total', '%', 'Fecha'],
-      data: docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        final userInfo = userDetails[data['uid']] ?? {'fullName': 'Desconocido', 'nomina': 'Sin nómina'};
-        final timestamp = (data['timestamp'] as Timestamp).toDate();
-        return [
-          userInfo['fullName'] ?? 'Desconocido',
-          userInfo['nomina'] ?? 'Sin nómina',
-          data['category'] ?? '',
-          data['lesson'] ?? '',
-          data['score'].toString(),
-          data['total'].toString(),
-          '${(data['percentage'] as num).toStringAsFixed(1)}%',
-          DateFormat('dd/MM/yyyy').format(timestamp),
-        ];
-      }).toList(),
-    );
-  }
-
-  Future<void> _pickDateRange() async {
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2022),
-      lastDate: DateTime.now(),
-    );
-    if (picked != null) {
-      setState(() {
-        _startDate = DateTime(
-          picked.start.year,
-          picked.start.month,
-          picked.start.day,
-          0,
-          0,
-          0,
-        );
-        _endDate = DateTime(
-          picked.end.year,
-          picked.end.month,
-          picked.end.day,
-          23,
-          59,
-          59,
-        );
-      });
     }
   }
 
@@ -604,6 +571,38 @@ class _ExamResultsScreenState extends State<ExamResultsScreen> {
     } catch (e) {
       debugPrint('❌ Error al generar o compartir el PDF: $e');
     }
+  }
+
+  pw.Widget _styledPdfTableFromDocs(
+      List<QueryDocumentSnapshot> docs,
+      Map<String, Map<String, String>> userDetails,
+      ) {
+    return pw.Table.fromTextArray(
+      border: pw.TableBorder.all(width: 0.5, color: PdfColors.grey),
+      headerStyle: pw.TextStyle(
+        fontWeight: pw.FontWeight.bold,
+        color: PdfColors.white,
+      ),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey800),
+      cellAlignment: pw.Alignment.centerLeft,
+      cellStyle: const pw.TextStyle(fontSize: 10),
+      headers: ['Nombre', 'Nómina', 'Curso', 'Lección', 'Score', 'Total', '%', 'Fecha'],
+      data: docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final userInfo = userDetails[data['uid']] ?? {'fullName': 'Desconocido', 'nomina': 'Sin nómina'};
+        final timestamp = (data['timestamp'] as Timestamp).toDate();
+        return [
+          userInfo['fullName'] ?? 'Desconocido',
+          userInfo['nomina'] ?? 'Sin nómina',
+          data['category'] ?? '',
+          data['lesson'] ?? '',
+          data['score'].toString(),
+          data['total'].toString(),
+          '${(data['percentage'] as num).toStringAsFixed(1)}%',
+          DateFormat('dd/MM/yyyy').format(timestamp),
+        ];
+      }).toList(),
+    );
   }
 
   Widget _buildDataTable(

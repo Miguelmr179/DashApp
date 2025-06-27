@@ -1,4 +1,4 @@
-/*
+
 //Version WEB
 import 'dart:html' as html;
 import 'dart:typed_data';
@@ -249,12 +249,11 @@ class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuario
     );
   }
 }
-*/*/
 
 
+/*
 //Version MOVIL
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -268,6 +267,7 @@ class AdministrarFotosUsuariosScreen extends StatefulWidget {
 }
 
 class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuariosScreen> {
+
   final Map<String, File> _fotosTemporal = {};
   final Map<String, String> _nombresFotos = {};
   final Map<String, bool> _subiendo = {};
@@ -414,7 +414,4 @@ class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuario
     );
   }
 }
-
-
-
-
+*/

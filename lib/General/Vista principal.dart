@@ -4,7 +4,9 @@ import 'package:dashapp/Utileria/global_exports.dart';
 
 
 class HomeIntranetScreen extends StatefulWidget {
+
   final String role;
+
   const HomeIntranetScreen({super.key, required this.role});
 
   @override
@@ -12,7 +14,9 @@ class HomeIntranetScreen extends StatefulWidget {
 }
 
 class _HomeIntranetScreenState extends State<HomeIntranetScreen> {
+
   final currentUser = FirebaseAuth.instance.currentUser;
+
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
     if (mounted) {
@@ -38,7 +42,6 @@ class _HomeIntranetScreenState extends State<HomeIntranetScreen> {
     Navigator.push(context, MaterialPageRoute(builder: (context) => page));
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     final isDarkMode = themeNotifier.value == ThemeMode.dark;
@@ -92,6 +95,7 @@ class _HomeIntranetScreenState extends State<HomeIntranetScreen> {
       },
     );
   }
+
   Widget _buildMainScaffold(String role, Gradient backgroundGradient) {
 
     return Scaffold(
@@ -189,7 +193,6 @@ class _HomeIntranetScreenState extends State<HomeIntranetScreen> {
       ),
     );
   }
-
 
   Widget _buildBodyContent() {
     if (currentUser == null) {

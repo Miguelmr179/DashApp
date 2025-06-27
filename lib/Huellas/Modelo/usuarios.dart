@@ -30,7 +30,6 @@ class Usuario {
   }
 }
 
-
 class RegistroOffline {
   final String titulo;
   final String nombre;

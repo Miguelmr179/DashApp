@@ -9,11 +9,13 @@ class GlobalProgressScreen extends StatefulWidget {
 }
 
 class _GlobalProgressScreenState extends State<GlobalProgressScreen> {
+
   String? _selectedCategory;
   String _searchUser = '';
-  List<String> _allCategories = [];
-  bool _categoriesInitialized = false;
 
+  List<String> _allCategories = [];
+
+  bool _categoriesInitialized = false;
 
   Stream<List<UserProgressGeneral>> _progressStream() {
     return FirebaseFirestore.instance
@@ -111,8 +113,6 @@ class _GlobalProgressScreenState extends State<GlobalProgressScreen> {
       }
     });
   }
-
-
 
 
   @override
@@ -298,6 +298,7 @@ class _GlobalProgressScreenState extends State<GlobalProgressScreen> {
 }
 
 class UserProgressGeneral {
+
   final String email;
   final Map<String, double> courses;
 

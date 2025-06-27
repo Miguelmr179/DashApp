@@ -2,13 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-
-import '../Controlador/GuardarRegistroEnCambios.dart';
-
 class EditarRegistroScreen extends StatefulWidget {
+
   final String id;
   final Map<String, dynamic> datos;
-
   final String fechaResumen;
   final String tarjeta;
 
@@ -25,10 +22,10 @@ class EditarRegistroScreen extends StatefulWidget {
 }
 
 class _EditarRegistroScreenState extends State<EditarRegistroScreen> {
+
   late final TextEditingController _nombreController;
   late final TextEditingController _nominaController;
   late final TextEditingController _observacionesController;
-
   late DateTime _fechaSeleccionada;
 
   TimeOfDay? _entradaPlanta;
@@ -59,6 +56,14 @@ class _EditarRegistroScreenState extends State<EditarRegistroScreen> {
     _salidaComedor = _parseHora(d['salida_comedor']);
   }
 
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _nominaController.dispose();
+    _observacionesController.dispose();
+    super.dispose();
+  }
+
   TimeOfDay? _parseHora(dynamic horaStr) {
     if (horaStr == null || horaStr.toString().isEmpty) return null;
     try {
@@ -67,6 +72,23 @@ class _EditarRegistroScreenState extends State<EditarRegistroScreen> {
     } catch (_) {
       return null;
     }
+  }
+
+  Timestamp _combinarFechaHora(String fecha, String hora) {
+    // fecha: '2025-06-25', hora: '18:03:39'
+    final fechaPartes = fecha.split('-').map(int.parse).toList();
+    final horaPartes = hora.split(':').map(int.parse).toList();
+
+    final fechaHora = DateTime(
+      fechaPartes[0],
+      fechaPartes[1],
+      fechaPartes[2],
+      horaPartes[0],
+      horaPartes[1],
+      horaPartes.length > 2 ? horaPartes[2] : 0,
+    );
+
+    return Timestamp.fromDate(fechaHora);
   }
 
   String _formatTimeOfDay(TimeOfDay? time) {
@@ -103,33 +125,46 @@ class _EditarRegistroScreenState extends State<EditarRegistroScreen> {
     }
   }
 
-  Timestamp _combinarFechaHora(String fecha, String hora) {
-    // fecha: '2025-06-25', hora: '18:03:39'
-    final fechaPartes = fecha.split('-').map(int.parse).toList();
-    final horaPartes = hora.split(':').map(int.parse).toList();
+  Future<void> guardarRegistroEnCambios(Map<String, dynamic> datos) async {
 
-    final fechaHora = DateTime(
-      fechaPartes[0],
-      fechaPartes[1],
-      fechaPartes[2],
-      horaPartes[0],
-      horaPartes[1],
-      horaPartes.length > 2 ? horaPartes[2] : 0,
-    );
+    final String regNo = datos['Reg_no'] ?? '';
+    final String fecha = datos['fecha'] ?? '';
+    final String tipo = datos['tipo'] ?? '';
+    final String hora = datos['hora'] ?? '';
+    final Timestamp registro = datos['Reg_FechaHoraRegistro'] ?? Timestamp.now();
 
-    return Timestamp.fromDate(fechaHora);
+
+    if (regNo.isEmpty || fecha.isEmpty || tipo.isEmpty || hora.isEmpty) {
+      throw Exception('Faltan datos esenciales para guardar el registro.');
+    }
+
+    final query = await FirebaseFirestore.instance
+        .collection('checadas')
+        .where('Reg_no', isEqualTo: regNo)
+        .where('fecha', isEqualTo: fecha)
+        .where('tipo', isEqualTo: tipo)
+        .limit(1)
+        .get();
+
+    final Map<String, dynamic> datosFinales = {
+      'Reg_no': regNo,
+      'Title': datos['Title'] ?? '',
+      'fecha': fecha,
+      'hora': hora,
+      'tipo': tipo,
+      'Reg_FechaHoraRegistro': registro,
+      'observaciones': datos['observaciones'] ?? '',
+    };
+
+    if (query.docs.isNotEmpty) {
+      await query.docs.first.reference.update(datosFinales);
+    } else {
+      await FirebaseFirestore.instance.collection('checadas').add(datosFinales);
+    }
   }
 
-
   @override
-  void dispose() {
-    _nombreController.dispose();
-    _nominaController.dispose();
-    _observacionesController.dispose();
-    super.dispose();
-  }
 
-  @override
   Widget build(BuildContext context) {
     final String regNo = _nominaController.text.trim();
     final String title = _nombreController.text.trim().isEmpty ? 'Sin nombre' : _nombreController.text.trim();

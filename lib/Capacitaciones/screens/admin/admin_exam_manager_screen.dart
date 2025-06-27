@@ -12,9 +12,11 @@ class AdminExamManagerScreen extends StatefulWidget {
 }
 
 class _AdminExamManagerScreenState extends State<AdminExamManagerScreen> {
+
   String? _selectedArea;
   String? _selectedCourse;
   String? _selectedLesson;
+
   List<String> _areas = ['Todos'];
   List<String> _courses = ['Todos'];
   List<String> _lessons = ['Todos'];
@@ -82,6 +84,26 @@ class _AdminExamManagerScreenState extends State<AdminExamManagerScreen> {
     );
   }
 
+  Future<void> _setActiveExam(BuildContext context, String selectedExamId, String lesson) async {
+    final examsSnapshot = await FirebaseFirestore.instance
+        .collection('exams')
+        .where('lesson', isEqualTo: lesson)
+        .get();
+
+    final batch = FirebaseFirestore.instance.batch();
+
+    for (var doc in examsSnapshot.docs) {
+      final isThis = doc.id == selectedExamId;
+      batch.update(doc.reference, {'isActive': isThis});
+    }
+
+    await batch.commit();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Examen activado para esta lección.')),
+    );
+  }
+
   void _confirmDelete(BuildContext context, String examId) {
     showDialog(
       context: context,
@@ -103,26 +125,6 @@ class _AdminExamManagerScreenState extends State<AdminExamManagerScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Future<void> _setActiveExam(BuildContext context, String selectedExamId, String lesson) async {
-    final examsSnapshot = await FirebaseFirestore.instance
-        .collection('exams')
-        .where('lesson', isEqualTo: lesson)
-        .get();
-
-    final batch = FirebaseFirestore.instance.batch();
-
-    for (var doc in examsSnapshot.docs) {
-      final isThis = doc.id == selectedExamId;
-      batch.update(doc.reference, {'isActive': isThis});
-    }
-
-    await batch.commit();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Examen activado para esta lección.')),
     );
   }
 

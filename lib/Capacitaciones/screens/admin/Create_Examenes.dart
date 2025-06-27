@@ -11,13 +11,13 @@ class AdminExamScreen extends StatefulWidget {
 }
 
 class _AdminExamScreenState extends State<AdminExamScreen> {
+
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _questionController = TextEditingController();
-  final List<TextEditingController> _optionControllers =
-  List.generate(4, (_) => TextEditingController());
+  final List<TextEditingController> _optionControllers = List.generate(4, (_) => TextEditingController());
+  final List<QuestionModel> _questions = [];
 
   int _correctAnswerIndex = 0;
-  final List<QuestionModel> _questions = [];
 
   List<String> _areas = [];
   List<String> _categories = [];
@@ -65,6 +65,39 @@ class _AdminExamScreenState extends State<AdminExamScreen> {
     });
   }
 
+  Future<void> _saveExam() async {
+    if (_formKey.currentState!.validate() &&
+        _questions.isNotEmpty &&
+        _selectedArea != null &&
+        _selectedCategory != null &&
+        _selectedLesson != null) {
+      final exam = ExamModel(
+        category: _selectedCategory!,
+        questions: _questions,
+      );
+      final data = exam.toJson()
+        ..addAll({
+          'area': _selectedArea!,
+          'lesson': _selectedLesson!,
+          'isActive': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+
+      await FirebaseFirestore.instance.collection('exams').add(data);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('✅ Examen guardado exitosamente')),
+      );
+
+      _questions.clear();
+      setState(() {
+        _selectedArea = null;
+        _selectedCategory = null;
+        _selectedLesson = null;
+      });
+    }
+  }
+
   void _addQuestion() {
     if (_questionController.text.isNotEmpty &&
         _optionControllers.every((c) => c.text.isNotEmpty)) {
@@ -101,39 +134,6 @@ class _AdminExamScreenState extends State<AdminExamScreen> {
     setState(() {
       _questions.removeAt(index);
     });
-  }
-
-  Future<void> _saveExam() async {
-    if (_formKey.currentState!.validate() &&
-        _questions.isNotEmpty &&
-        _selectedArea != null &&
-        _selectedCategory != null &&
-        _selectedLesson != null) {
-      final exam = ExamModel(
-        category: _selectedCategory!,
-        questions: _questions,
-      );
-      final data = exam.toJson()
-        ..addAll({
-          'area': _selectedArea!,
-          'lesson': _selectedLesson!,
-          'isActive': false,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-      await FirebaseFirestore.instance.collection('exams').add(data);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Examen guardado exitosamente')),
-      );
-
-      _questions.clear();
-      setState(() {
-        _selectedArea = null;
-        _selectedCategory = null;
-        _selectedLesson = null;
-      });
-    }
   }
 
   @override

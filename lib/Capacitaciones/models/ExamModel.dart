@@ -1,4 +1,5 @@
 class ExamModel {
+
   final String category;
   final List<QuestionModel> questions;
 
@@ -22,6 +23,7 @@ class ExamModel {
 }
 
 class QuestionModel {
+
   final String question;
   final List<String> options;
   final int answer;

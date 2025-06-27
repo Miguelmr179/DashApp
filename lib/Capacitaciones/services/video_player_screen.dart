@@ -90,7 +90,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     if (duration.inSeconds > 0 && position.inSeconds > 0) {
       final progress = position.inSeconds / duration.inSeconds;
 
-      if (progress >= 0.97) { // 90% del video visto
+      if (progress >= 0.01) { // 90% del video visto
         _registerView();
       }
     }

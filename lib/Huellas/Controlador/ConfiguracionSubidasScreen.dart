@@ -11,9 +11,9 @@ class ConfiguracionSubidasScreen extends StatefulWidget {
 }
 
 class _ConfiguracionSubidasScreenState extends State<ConfiguracionSubidasScreen> {
+
   List<String> _horasChecadas = [];
   List<String> _horasComedor = [];
-
   List<Map<String, dynamic>> _checadasPendientes = [];
   List<Map<String, dynamic>> _comidasPendientes = [];
 
@@ -135,7 +135,6 @@ class _ConfiguracionSubidasScreenState extends State<ConfiguracionSubidasScreen>
       ],
     );
   }
-
 
   @override
   Widget build(BuildContext context) {

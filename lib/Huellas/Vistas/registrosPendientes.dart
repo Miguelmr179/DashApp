@@ -4,7 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 class RegistrosPendientesScreen extends StatefulWidget {
-  final String tipoRegistro; // 'checkins_offline' o 'comidas_offline'
+
+  final String tipoRegistro;
+
   const RegistrosPendientesScreen({super.key, required this.tipoRegistro});
 
   @override
@@ -12,6 +14,7 @@ class RegistrosPendientesScreen extends StatefulWidget {
 }
 
 class _RegistrosPendientesScreenState extends State<RegistrosPendientesScreen> {
+
   List<Map<String, dynamic>> registros = [];
 
   @override
