@@ -34,7 +34,9 @@ class _MenuPageState extends State<MenuPage> {
       httpClient.connectionTimeout = const Duration(seconds: 10); // ← Límite
 
       final request = await httpClient.getUrl(Uri.parse(url));
-      final response = await request.close().timeout(const Duration(seconds: 10));
+      final response = await request.close().timeout(
+        const Duration(seconds: 10),
+      );
 
       if (response.statusCode == 200) {
         final bytes = await consolidateHttpClientResponseBytes(response);
@@ -54,11 +56,17 @@ class _MenuPageState extends State<MenuPage> {
     setState(() => _cargandoUsuarios = true);
 
     final prefs = await SharedPreferences.getInstance();
-    final snapshot = await FirebaseFirestore.instance.collection('Usuarios').get();
+    final snapshot =
+        await FirebaseFirestore.instance.collection('Usuarios').get();
 
     final listaRaw = prefs.getStringList('usuarios_locales') ?? [];
-    final listaLocal = listaRaw.map((e) => jsonDecode(e)).whereType<Map<String, dynamic>>().toList();
-    final usuariosFirebase = snapshot.docs.map((doc) => Usuario.fromMap(doc.data())).toList();
+    final listaLocal =
+        listaRaw
+            .map((e) => jsonDecode(e))
+            .whereType<Map<String, dynamic>>()
+            .toList();
+    final usuariosFirebase =
+        snapshot.docs.map((doc) => Usuario.fromMap(doc.data())).toList();
 
     final listaJson = <String>[];
 
@@ -67,7 +75,7 @@ class _MenuPageState extends State<MenuPage> {
       final url = usuario.foto;
 
       final local = listaLocal.firstWhere(
-            (u) => u['titulo'] == uid,
+        (u) => u['titulo'] == uid,
         orElse: () => {},
       );
 
@@ -97,7 +105,6 @@ class _MenuPageState extends State<MenuPage> {
     setState(() => _cargandoUsuarios = false);
   }
 
-
   Future<int> obtenerTotalUsuariosGuardados() async {
     final prefs = await SharedPreferences.getInstance();
     final listaRaw = prefs.getStringList('usuarios_locales') ?? [];
@@ -111,11 +118,7 @@ class _MenuPageState extends State<MenuPage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0487D9),
-            Color(0xFF023859),
-            Color(0xFF0487D9),
-          ],
+          colors: [Color(0xFF0487D9), Color(0xFF023859), Color(0xFF0487D9)],
         ),
       ),
       child: Scaffold(
@@ -142,103 +145,125 @@ class _MenuPageState extends State<MenuPage> {
             IconButton(
               tooltip: 'Actualizar conteo de usuarios',
               icon: const Icon(Icons.refresh),
-              onPressed: _cargandoUsuarios ? null : obtenerTotalUsuariosGuardados,
+              onPressed:
+                  _cargandoUsuarios ? null : obtenerTotalUsuariosGuardados,
             ),
           ],
         ),
-        body: _cargandoUsuarios
-            ? const Center(child: CircularProgressIndicator())
-            : Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildMenuCard(
-                  context,
-                  icon: Icons.login_rounded,
-                  label: 'Reloj de Entradas',
-                  color: Colors.greenAccent.shade700,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const RelojES()),
-                    );
-                  },
-                ),
-                const SizedBox(height: 25),
-                _buildMenuCard(
-                  context,
-                  icon: Icons.logout_rounded,
-                  label: 'Reloj Salidas',
-                  color: Colors.redAccent.shade700,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const RelojCOM()),
-                    );
-                  },
-                ),
-                const SizedBox(height: 25),
-                _buildMenuCard(
-                  context,
-                  icon: Icons.group,
-                  label: 'Usuarios cargados',
-                  color: Colors.blueAccent.shade100,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const UsuariosLocalesScreen()),
-                    );
-                  },
-                ),
-                const SizedBox(height: 60),
-                _buildMenuCard(
-                  context,
-                  icon: Icons.settings,
-                  label: 'Configuracion',
-                  color: Colors.grey.shade400,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SubmenuConfiguracion()),
-                    );
-                  },
-                ),
-                const SizedBox(height: 25),
-                //Mostrar el total de usuarios guardados en un texto
-                FutureBuilder<int>(
-                  future: obtenerTotalUsuariosGuardados(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const CircularProgressIndicator();
-                    } else if (snapshot.hasError) {
-                      return Text('Error: ${snapshot.error}');
-                    } else {
-                      return Text(
-                        'Total de usuarios guardados: ${snapshot.data}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+        body:
+            _cargandoUsuarios
+                ? const LinearProgressIndicator(
+                  minHeight: 6,
+                  backgroundColor: Colors.white24,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                )
+                : Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildMenuCard(
+                          context,
+                          icon: Icons.login_rounded,
+                          label: 'Reloj de Entradas',
+                          color: Colors.greenAccent.shade700,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RelojES(),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    }
-                  },
+                        const SizedBox(height: 25),
+                        _buildMenuCard(
+                          context,
+                          icon: Icons.logout_rounded,
+                          label: 'Reloj Salidas',
+                          color: Colors.redAccent.shade700,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RelojCOM(),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 25),
+                        _buildMenuCard(
+                          context,
+                          icon: Icons.group,
+                          label: 'Usuarios cargados',
+                          color: Colors.blueAccent.shade100,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => const UsuariosLocalesScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 60),
+                        _buildMenuCard(
+                          context,
+                          icon: Icons.settings,
+                          label: 'Configuracion',
+                          color: Colors.grey.shade400,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => const SubmenuConfiguracion(),
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 25),
+                        //Mostrar el total de usuarios guardados en un texto
+                        FutureBuilder<int>(
+                          future: obtenerTotalUsuariosGuardados(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const CircularProgressIndicator();
+                            } else if (snapshot.hasError) {
+                              return Text('Error: ${snapshot.error}');
+                            } else {
+                              return Text(
+                                'Total de usuarios guardados: ${snapshot.data}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
 
-  Widget _buildMenuCard(BuildContext context,
-      {required IconData icon,
-        required String label,
-        required Color color,
-        required VoidCallback onTap}) {
+  Widget _buildMenuCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -281,7 +306,6 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 
-
   ButtonStyle _buttonStyle() {
     return ElevatedButton.styleFrom(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -290,9 +314,6 @@ class _MenuPageState extends State<MenuPage> {
     );
   }
 }
-
-
-
 
 class SubmenuConfiguracion extends StatelessWidget {
   const SubmenuConfiguracion({super.key});
@@ -320,9 +341,7 @@ class SubmenuConfiguracion extends StatelessWidget {
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => ResumenChecadasScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => ResumenChecadasScreen()),
           );
         },
       ),
@@ -340,7 +359,9 @@ class SubmenuConfiguracion extends StatelessWidget {
           final opcion = opciones[index];
           return Card(
             elevation: 8,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             margin: const EdgeInsets.symmetric(vertical: 12),
             child: InkWell(
               borderRadius: BorderRadius.circular(20),
@@ -365,7 +386,11 @@ class SubmenuConfiguracion extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const Icon(Icons.chevron_right, size: 28, color: Colors.grey),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 28,
+                      color: Colors.grey,
+                    ),
                   ],
                 ),
               ),
@@ -390,4 +415,3 @@ class _OpcionSubmenu {
     required this.onTap,
   });
 }
-

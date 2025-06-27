@@ -43,13 +43,12 @@ dependencies:
   wakelock_plus: ^1.1.2
   http: ^1.4.0
   sign_in_with_apple: ^7.0.1
-
-
-
+  excel: ^4.0.6
   connectivity_plus: ^6.1.4
   shared_preferences: ^2.5.3
   carousel_slider: ^5.1.1
   flutter_localization: ^0.3.2
+  open_file: ^3.5.10
 
 
 

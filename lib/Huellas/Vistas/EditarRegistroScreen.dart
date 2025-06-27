@@ -103,6 +103,24 @@ class _EditarRegistroScreenState extends State<EditarRegistroScreen> {
     }
   }
 
+  Timestamp _combinarFechaHora(String fecha, String hora) {
+    // fecha: '2025-06-25', hora: '18:03:39'
+    final fechaPartes = fecha.split('-').map(int.parse).toList();
+    final horaPartes = hora.split(':').map(int.parse).toList();
+
+    final fechaHora = DateTime(
+      fechaPartes[0],
+      fechaPartes[1],
+      fechaPartes[2],
+      horaPartes[0],
+      horaPartes[1],
+      horaPartes.length > 2 ? horaPartes[2] : 0,
+    );
+
+    return Timestamp.fromDate(fechaHora);
+  }
+
+
   @override
   void dispose() {
     _nombreController.dispose();
@@ -116,6 +134,7 @@ class _EditarRegistroScreenState extends State<EditarRegistroScreen> {
     final String regNo = _nominaController.text.trim();
     final String title = _nombreController.text.trim().isEmpty ? 'Sin nombre' : _nombreController.text.trim();
     final String fecha = DateFormat('yyyy-MM-dd').format(_fechaSeleccionada);
+    final String tarjeta = widget.tarjeta;
 
     return Scaffold(
       appBar: AppBar(
@@ -163,14 +182,13 @@ class _EditarRegistroScreenState extends State<EditarRegistroScreen> {
                     final horaStr = _formatTimeOfDay(time);
 
                     final registro = {
-                      'Reg_no': regNo,
+                      'Reg_no': tarjeta,
                       'Title': title,
                       'fecha': fecha,
                       'hora': horaStr,
                       'tipo': tipo,
                       'timestamp': now,
-                      'Reg_Fecha': now.toDate(),
-                      'Reg_FechaHoraRegistro': now,
+                      'Reg_FechaHoraRegistro': _combinarFechaHora(fecha, horaStr),
                       'observaciones': _observacionesController.text.trim(),
                     };
 

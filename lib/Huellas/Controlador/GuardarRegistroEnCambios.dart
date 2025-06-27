@@ -5,14 +5,15 @@ Future<void> guardarRegistroEnCambios(Map<String, dynamic> datos) async {
   final String fecha = datos['fecha'] ?? '';
   final String tipo = datos['tipo'] ?? '';
   final String hora = datos['hora'] ?? '';
-  final Timestamp timestamp = datos['timestamp'] ?? Timestamp.now();
+  final Timestamp registro = datos['Reg_FechaHoraRegistro'] ?? Timestamp.now();
+
 
   if (regNo.isEmpty || fecha.isEmpty || tipo.isEmpty || hora.isEmpty) {
     throw Exception('Faltan datos esenciales para guardar el registro.');
   }
 
   final query = await FirebaseFirestore.instance
-      .collection('Cambios')
+      .collection('checadas')
       .where('Reg_no', isEqualTo: regNo)
       .where('fecha', isEqualTo: fecha)
       .where('tipo', isEqualTo: tipo)
@@ -25,15 +26,13 @@ Future<void> guardarRegistroEnCambios(Map<String, dynamic> datos) async {
     'fecha': fecha,
     'hora': hora,
     'tipo': tipo,
-    'timestamp': timestamp,
-    'Reg_Fecha': timestamp.toDate(),
-    'Reg_FechaHoraRegistro': Timestamp.now(),
+    'Reg_FechaHoraRegistro': registro,
     'observaciones': datos['observaciones'] ?? '',
   };
 
   if (query.docs.isNotEmpty) {
     await query.docs.first.reference.update(datosFinales);
   } else {
-    await FirebaseFirestore.instance.collection('Cambios').add(datosFinales);
+    await FirebaseFirestore.instance.collection('checadas').add(datosFinales);
   }
 }
