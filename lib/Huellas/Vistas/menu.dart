@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dashapp/Huellas/Controlador/ConfiguracionSubidasScreen.dart';
+import 'package:dashapp/Huellas/Utileria/Usuarios_Local_Singleton.dart';
 import 'package:dashapp/Huellas/Vistas/reloj_Entradas.dart';
 import 'package:dashapp/Huellas/Vistas/reloj_Salidas.dart';
 import 'package:dashapp/Huellas/Vistas/resumenChecadas.dart';
@@ -20,14 +22,20 @@ class MenuPage extends StatefulWidget {
 }
 
 class _MenuPageState extends State<MenuPage> {
-
   bool _cargandoUsuarios = false;
 
   @override
   void initState() {
     super.initState();
     cargarUsuariosLocales();
+    UsuariosLocalesService().iniciar();
   }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
 
   Future<String?> _descargarYGuardarImagen(String uid, String url) async {
     try {
@@ -58,7 +66,7 @@ class _MenuPageState extends State<MenuPage> {
 
     final prefs = await SharedPreferences.getInstance();
     final snapshot =
-        await FirebaseFirestore.instance.collection('Usuarios').get();
+        await FirebaseFirestore.instance.collection('UsuariosDcc').get();
 
     final listaRaw = prefs.getStringList('usuarios_locales') ?? [];
     final listaLocal =
@@ -66,8 +74,11 @@ class _MenuPageState extends State<MenuPage> {
             .map((e) => jsonDecode(e))
             .whereType<Map<String, dynamic>>()
             .toList();
-    final usuariosFirebase =
-        snapshot.docs.map((doc) => Usuario.fromMap(doc.data())).toList();
+    final usuariosFirebase = snapshot.docs
+        .map((doc) => UsuarioLocal.fromMap(doc.data() as Map<String, dynamic>))
+        .toList();
+
+
 
     final listaJson = <String>[];
 

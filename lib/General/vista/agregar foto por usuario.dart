@@ -1,4 +1,4 @@
-
+/*
 //Version WEB
 import 'dart:html' as html;
 import 'dart:typed_data';
@@ -58,7 +58,7 @@ class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuario
       final uploadTask = await storageRef.putData(foto);
       final url = await uploadTask.ref.getDownloadURL();
 
-      await FirebaseFirestore.instance.collection('Usuarios').doc(uid).update({
+      await FirebaseFirestore.instance.collection('UsuariosDcc').doc(uid).update({
         'foto': url,
       });
 
@@ -88,7 +88,7 @@ class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuario
     return Scaffold(
       appBar: AppBar(title: const Text('Administrar Fotos de Usuarios')),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('Usuarios').snapshots(),
+        stream: FirebaseFirestore.instance.collection('UsuariosDcc').snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
@@ -249,9 +249,9 @@ class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuario
     );
   }
 }
+*/*/
 
 
-/*
 //Version MOVIL
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -302,7 +302,7 @@ class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuario
       final uploadTask = await storageRef.putFile(foto);
       final url = await uploadTask.ref.getDownloadURL();
 
-      await FirebaseFirestore.instance.collection('Usuarios').doc(uid).update({
+      await FirebaseFirestore.instance.collection('UsuariosDcc').doc(uid).update({
         'foto': url,
       });
 
@@ -332,7 +332,7 @@ class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuario
     return Scaffold(
       appBar: AppBar(title: const Text('Administrar Fotos de Usuarios')),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('Usuarios').orderBy('nombre').snapshots(),
+        stream: FirebaseFirestore.instance.collection('UsuariosDcc').orderBy('nombre').snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
@@ -414,4 +414,3 @@ class _AdministrarFotosUsuariosScreenState extends State<AdministrarFotosUsuario
     );
   }
 }
-*/

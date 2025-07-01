@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dashapp/Huellas/Utileria/Usuarios_Local_Singleton.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -39,6 +40,7 @@ class _RelojUSState extends State<RelojES> {
   List<String> _carouselImagesFirebase = [];
 
 
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +50,7 @@ class _RelojUSState extends State<RelojES> {
       (_) => _actualizarFechaHora(),
     );
     _cargarUsuariosLocales();
+    UsuariosLocalesService().notificador.addListener(_cargarUsuariosLocales);
     _escucharCambiosCarrusel();
     _focusNode.requestFocus();
 
@@ -66,6 +69,7 @@ class _RelojUSState extends State<RelojES> {
     Connectivity().checkConnectivity().then(
       (result) => setState(() => _offline = result == ConnectivityResult.none),
     );
+    _checkinService.iniciarSubidaAutomatica();
   }
 
   @override
@@ -77,6 +81,7 @@ class _RelojUSState extends State<RelojES> {
     _connectivitySubscription.cancel();
     super.dispose();
     _carruselSubscription.cancel();
+    UsuariosLocalesService().notificador.removeListener(_cargarUsuariosLocales);
   }
 
   void _escucharCambiosCarrusel() {
@@ -106,7 +111,7 @@ class _RelojUSState extends State<RelojES> {
   Future<void> _cargarUsuariosLocales() async {
     final prefs = await SharedPreferences.getInstance();
     final usuariosSnapshot =
-    await FirebaseFirestore.instance.collection('Usuarios').get();
+    await FirebaseFirestore.instance.collection('UsuariosDcc').get();
 
     final listaActualRaw = prefs.getStringList('usuarios_locales') ?? [];
     final listaActual =
@@ -164,7 +169,8 @@ class _RelojUSState extends State<RelojES> {
         _focusNode.requestFocus();
       });
 
-      _desbloqueoTimer?.cancel(); // cancelar temporizador anterior si existe
+      _desbloqueoTimer?.cancel();
+
       _desbloqueoTimer = Timer(const Duration(seconds: 30), () {
         if (mounted) {
           setState(() {

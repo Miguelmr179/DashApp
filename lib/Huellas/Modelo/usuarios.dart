@@ -1,24 +1,25 @@
-class Usuario {
+class UsuarioLocal {
   final String titulo;
   final String nombre;
   final String? foto;
   String? fotoLocal;
 
-  Usuario({
+  UsuarioLocal({
     required this.titulo,
     required this.nombre,
     this.foto,
     this.fotoLocal,
   });
 
-  factory Usuario.fromMap(Map<String, dynamic> map) {
-    return Usuario(
-      titulo: map['Título'] ?? '',
-      nombre: map['nombre'] ?? '',
-      foto: map['foto'],
-      fotoLocal: map['foto_local'],
+  factory UsuarioLocal.fromMap(Map<String, dynamic> map) {
+    return UsuarioLocal(
+      titulo: '${map['Título'] ?? ''}',
+      nombre: '${map['nombre'] ?? ''}',
+      foto: map['foto']?.toString(),
+      fotoLocal: map['foto_local']?.toString(),
     );
   }
+
 
   Map<String, dynamic> toMap() {
     return {

@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 
 import 'package:dashapp/Huellas/Modelo/usuarios.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +15,8 @@ class UsuariosLocalesScreen extends StatefulWidget {
 }
 
 class _UsuariosLocalesScreenState extends State<UsuariosLocalesScreen> {
-  List<Usuario> _usuarios = [];
+  List<UsuarioLocal> _usuarios = [];
+
 
   @override
   void initState() {
@@ -21,15 +24,19 @@ class _UsuariosLocalesScreenState extends State<UsuariosLocalesScreen> {
     _cargarUsuarios();
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   Future<void> _cargarUsuarios() async {
     final prefs = await SharedPreferences.getInstance();
     final listaRaw = prefs.getStringList('usuarios_locales') ?? [];
-    final total = listaRaw.length;
 
     final usuarios = listaRaw
         .map((e) => jsonDecode(e))
         .whereType<Map<String, dynamic>>()
-        .map((mapa) => Usuario.fromMap(mapa))
+        .map((mapa) => UsuarioLocal.fromMap(mapa))
         .toList();
 
     setState(() => _usuarios = usuarios);

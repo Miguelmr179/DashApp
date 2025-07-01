@@ -1,7 +1,4 @@
-import 'package:dashapp/Capacitaciones/screens/manager/manage_global_progress_screen.dart';
 import 'package:dashapp/Utileria/global_exports.dart';
-
-
 
 class HomeIntranetScreen extends StatefulWidget {
 
@@ -476,18 +473,6 @@ class _HomeIntranetScreenState extends State<HomeIntranetScreen> {
             ],
           ),
           _buildDrawerItem(
-            Icons.assignment_ind,
-            'Asignar Cursos Área',
-                () => _navigate(const AssignAreaCoursesScreen()),
-            drawerTextColor,
-          ),
-          _buildDrawerItem(
-            Icons.group,
-            'Ver Progreso General',
-                () => _navigate(const ManageGlobalProgressScreen()),
-            drawerTextColor,
-          ),
-          _buildDrawerItem(
             Icons.logout,
             'Cerrar Sesión',
             _logout,
@@ -539,12 +524,6 @@ class _HomeIntranetScreenState extends State<HomeIntranetScreen> {
                 ),
               ),
             ],
-          ),
-          _buildDrawerItem(
-            Icons.edit,
-            'Administrar Contenido de Área',
-                () => _navigate(const ManageInstructorCoursesScreen()),
-            drawerTextColor,
           ),
           _buildDrawerItem(
             Icons.logout,

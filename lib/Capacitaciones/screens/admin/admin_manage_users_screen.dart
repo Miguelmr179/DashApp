@@ -16,7 +16,7 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen> {
 
   final AreaService _areaService = AreaService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final List<String> _roles = ['user', 'instructor', 'jefe', 'admin'];
+  final List<String> _roles = ['user', 'instructor', 'jefe', 'admin', 'nominas', 'incidencias', 'capacitaciones', ];
 
   List<String> _areas = [];
 
@@ -365,6 +365,14 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen> {
                                               color: Colors.grey,
                                             ),
                                           ),
+                                        //Mostrar correo electrónico
+                                        Text(
+                                          'Email: ${user.email}',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -400,6 +408,9 @@ class _AdminManageUsersScreenState extends State<AdminManageUsersScreen> {
                                       DropdownMenuItem(value: 'instructor', child: Text('Instructor')),
                                       DropdownMenuItem(value: 'jefe', child: Text('Jefe')),
                                       DropdownMenuItem(value: 'admin', child: Text('Administrador')),
+                                      DropdownMenuItem(value: 'nominas', child: Text('Nómina')),
+                                      DropdownMenuItem(value: 'incidencias', child: Text('Incidencias')),
+                                      DropdownMenuItem(value: 'capacitaciones', child: Text('Capacitaciones')),
                                     ],
                                     onChanged: (newRole) async {
                                       if (newRole != null && newRole != user.role) {

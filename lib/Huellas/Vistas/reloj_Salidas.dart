@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dashapp/Huellas/Utileria/Usuarios_Local_Singleton.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -49,6 +50,7 @@ class _RelojCOMState extends State<RelojCOM> {
 
     _focusNode.requestFocus();
     _cargarUsuariosLocales();
+    UsuariosLocalesService().notificador.addListener(_cargarUsuariosLocales);
     _escucharCambiosCarrusel();
 
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
@@ -66,6 +68,7 @@ class _RelojCOMState extends State<RelojCOM> {
     Connectivity().checkConnectivity().then(
       (result) => setState(() => _offline = result == ConnectivityResult.none),
     );
+    _checkinService.iniciarSubidaAutomatica();
   }
 
   @override
@@ -77,6 +80,7 @@ class _RelojCOMState extends State<RelojCOM> {
     _connectivitySubscription.cancel();
     super.dispose();
     _carruselSubscription.cancel();
+    UsuariosLocalesService().notificador.removeListener(_cargarUsuariosLocales);
   }
 
 
@@ -126,7 +130,7 @@ class _RelojCOMState extends State<RelojCOM> {
   Future<void> _cargarUsuariosLocales() async {
     final prefs = await SharedPreferences.getInstance();
     final usuariosSnapshot =
-        await FirebaseFirestore.instance.collection('Usuarios').get();
+        await FirebaseFirestore.instance.collection('UsuariosDcc').get();
 
     final listaActualRaw = prefs.getStringList('usuarios_locales') ?? [];
     final listaActual =

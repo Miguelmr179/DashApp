@@ -19,7 +19,7 @@ class CheckinService {
       }) async {
     final prefs = await SharedPreferences.getInstance();
     final usuariosRaw = prefs.getStringList('usuarios_locales') ?? [];
-    final registrosRaw = prefs.getStringList('checadas_locales_$tipoRegistro') ?? [];
+    final registrosRaw = prefs.getStringList('checadas_locales_checkins_offline') ?? []; //final registrosRaw = prefs.getStringList('checadas_locales_$tipoRegistro') ?? [];
 
     final usuarios = usuariosRaw
         .map((e) => jsonDecode(e))

@@ -1,15 +1,8 @@
 import 'dart:async';
-import 'dart:ui';
-import 'package:dashapp/General/agregar%20foto%20por%20usuario.dart';
-import 'package:dashapp/General/agregar_Noticias.dart';
-import 'package:dashapp/Huellas/Vistas/editarCarrusel.dart';
 import 'package:dashapp/Utileria/global_exports.dart';
+
 import 'package:intl/intl.dart';
-import '../Capacitaciones/screens/manager/manage_global_progress_screen.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:dashapp/General/agregar_eventos.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:dashapp/General/galeria_Eventos.dart';
+
 
 class HomeScreen extends StatefulWidget {
 
@@ -142,9 +135,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildMainScaffold(String role, Gradient backgroundGradient) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
+
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.blueAccent.shade400,
         elevation: 0,
         automaticallyImplyLeading: true,
         title: const Text(
@@ -228,6 +221,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ? _buildAdminDrawer()
               : role == 'jefe'
               ? _buildManagerDrawer()
+              : role == 'nominas'
+              ? _buildnominasDrawer()
+              : role == 'incidencias'
+              ? _buildIncidenciasDrawer()
+              : role == 'capacitaciones'
+              ? _buildCapacitacionesDrawer()
               : role == 'instructor'
               ? _buildInstructorDrawer()
               : _buildUserDrawer(),
@@ -342,10 +341,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _seccionCumpleaniosDelDia() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('Usuarios').snapshots(),
+      stream: FirebaseFirestore.instance.collection('UsuariosDcc').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(); // nada mientras carga
+          return const SizedBox();
         }
 
         final hoy = DateTime.now();
@@ -465,7 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final hoy = DateTime.now();
 
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('Usuarios').snapshots(),
+      stream: FirebaseFirestore.instance.collection('UsuariosDcc').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -596,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final mesActual = hoy.month;
 
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('Usuarios').snapshots(),
+      stream: FirebaseFirestore.instance.collection('UsuariosDcc').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -757,13 +756,6 @@ class _HomeScreenState extends State<HomeScreen> {
             if (docs.length == 1) {
               final data = docs.first.data() as Map<String, dynamic>;
               final imagenUrl = data['imagenUrl'] as String?;
-              final titulo = data['titulo'] ?? 'Sin título';
-              final contenido = data['contenido'] ?? '';
-              final fecha = DateFormat(
-                'dd MMM yyyy • hh:mm a',
-                'es_MX',
-              ).format((data['timestamp'] as Timestamp).toDate());
-
               return ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
@@ -850,12 +842,6 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, index, realIndex) {
                 final data = docs[index].data() as Map<String, dynamic>;
                 final imagenUrl = data['imagenUrl'] as String?;
-                final titulo = data['titulo'] ?? 'Sin título';
-                final contenido = data['contenido'] ?? '';
-                final fecha = DateFormat(
-                  'dd MMM yyyy • hh:mm a',
-                  'es_MX',
-                ).format((data['timestamp'] as Timestamp).toDate());
 
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -873,7 +859,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: Stack(
                       children: [
-                        // Imagen de fondo
+
                         if (imagenUrl != null)
                           Image.network(
                             imagenUrl,
@@ -1291,7 +1277,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   drawerTextColor,
                 ),
                 const Divider(),
-
               ],
             ),
           ),
@@ -1314,69 +1299,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   collapsedIconColor: drawerTextColor,
                   iconColor: drawerTextColor,
                   children: [
-                    ExpansionTile(
-                      leading: Icon(Icons.school, color: drawerTextColor),
-                      title: Text(
-                        'Configuración de Capacitaciones',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: drawerTextColor,
-                        ),
-                      ),
-                      collapsedIconColor: drawerTextColor,
-                      iconColor: drawerTextColor,
-                      children: [
-                        _buildDrawerItem(
-                          Icons.manage_accounts,
-                          'Administrar áreas',
-                              () => _navigate(const ManageAreasAndCoursesScreen()),
-                          drawerTextColor,
-                        ),
-                        _buildDrawerItem(
-                          Icons.video_collection,
-                          'Contenido de cursos',
-                              () => _navigate(const AdminResourcesScreen()),
-                          drawerTextColor,
-                        ),
-                        _buildDrawerItem(
-                          Icons.settings_accessibility,
-                          'Acceso a cursos',
-                              () => _navigate(const ManageCourseAccessScreen()),
-                          drawerTextColor,
-                        ),
-                        _buildDrawerItem(
-                          Icons.edit_document,
-                          'Administrar exámenes',
-                              () => _navigate(const AdminExamManagerScreen()),
-                          drawerTextColor,
-                        ),
-                        _buildDrawerItem(
-                          Icons.assignment,
-                          'Resultados de exámenes',
-                              () => _navigate(const ExamResultsScreen()),
-                          drawerTextColor,
-                        ),
-                        _buildDrawerItem(
-                          Icons.group,
-                          'Progreso general',
-                              () => _navigate(const GlobalProgressScreen()),
-                          drawerTextColor,
-                        ),
-                        _buildDrawerItem(
-                          Icons.supervisor_account,
-                          'Gestionar usuarios',
-                              () => _navigate(const AdminManageUsersScreen()),
-                          drawerTextColor,
-                        ),
-                        _buildDrawerItem(
-                          Icons.description,
-                          'Kardex',
-                              () => _navigate(const CardexScreen()),
-                          drawerTextColor,
-                        ),
-                      ],
+                    _buildDrawerItem(
+                      Icons.accessibility_new_outlined,
+                      'Colaboradores',
+                          () => _navigate(const empleadosScreen()),
+                      drawerTextColor,
                     ),
-                    const Divider(),
                     ExpansionTile(
                       leading: Icon(Icons.home, color: drawerTextColor),
                       title: Text(
@@ -1443,6 +1371,63 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                     const Divider(),
+                    ExpansionTile(
+                      leading: Icon(Icons.school, color: drawerTextColor),
+                      title: Text(
+                        'Configuración de Capacitaciones',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: drawerTextColor,
+                        ),
+                      ),
+                      collapsedIconColor: drawerTextColor,
+                      iconColor: drawerTextColor,
+                      children: [
+                        _buildDrawerItem(
+                          Icons.manage_accounts,
+                          'Administrar áreas',
+                              () => _navigate(const ManageAreasAndCoursesScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.video_collection,
+                          'Contenido de cursos',
+                              () => _navigate(const AdminResourcesScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.settings_accessibility,
+                          'Acceso a cursos',
+                              () => _navigate(const ManageCourseAccessScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.edit_document,
+                          'Administrar exámenes',
+                              () => _navigate(const AdminExamManagerScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.assignment,
+                          'Resultados de exámenes',
+                              () => _navigate(const ExamResultsScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.group,
+                          'Progreso general',
+                              () => _navigate(const GlobalProgressScreen()),
+                          drawerTextColor,
+                        ),
+                        _buildDrawerItem(
+                          Icons.description,
+                          'Kardex',
+                              () => _navigate(const CardexScreen()),
+                          drawerTextColor,
+                        ),
+                      ],
+                    ),
+                    const Divider(),
                   ],
                 ),
                 const Divider(),
@@ -1468,59 +1453,95 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Drawer(
       backgroundColor: drawerBackground,
-      child: ListView(
-        padding: EdgeInsets.zero,
+      child: Column(
         children: [
-          Stack(
-            children: [
-              UserAccountsDrawerHeader(
-                accountName: Text(currentUser?.displayName ?? 'Jefe de área'),
-                accountEmail: Text(currentUser?.email ?? ''),
-                currentAccountPicture: CircleAvatar(
-                  backgroundImage:
-                      currentUser?.photoURL != null
-                          ? NetworkImage(currentUser!.photoURL!)
-                          : const AssetImage('assets/ds.png') as ImageProvider,
-                ),
-                decoration: const BoxDecoration(color: Colors.blueAccent),
-              ),
-              Positioned(
-                bottom: 8,
-                right: 12,
-                child: IconButton(
-                  icon: const Icon(Icons.settings, color: Colors.white),
-                  tooltip: 'Configuración de Perfil',
-                  onPressed: () {
-                    Navigator.pop(context); // Cierra el Drawer
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const EditProfileScreen(),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                Stack(
+                  children: [
+                    UserAccountsDrawerHeader(
+                      accountName: Text(
+                        currentUser?.displayName ?? 'Jefe de área',
                       ),
-                    );
-                  },
+                      accountEmail: Text(currentUser?.email ?? ''),
+                      currentAccountPicture: CircleAvatar(
+                        backgroundImage:
+                        currentUser?.photoURL != null
+                            ? NetworkImage(currentUser!.photoURL!)
+                            : const AssetImage('assets/ds.png')
+                        as ImageProvider,
+                      ),
+                      decoration: const BoxDecoration(color: Colors.blueAccent),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      right: 12,
+                      child: IconButton(
+                        icon: const Icon(Icons.settings, color: Colors.white),
+                        tooltip: 'Configuración de Perfil',
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const EditProfileScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                const Divider(),
+                _buildDrawerItem(Icons.home, 'Inicio', () {
+                  setState(() {
+                    _mostrarCursos = false;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+                const Divider(),
+                _buildDrawerItem(Icons.school, 'Capacitaciones', () {
+                  setState(() {
+                    _mostrarCursos = true;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+                const Divider(),
+                _buildDrawerItem(
+                  Icons.history,
+                  'Registros E/S del equipo',
+                      () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ResumenChecadasScreen(),
+                    ),
+                  ),
+                  drawerTextColor,
+                ),
+                const Divider(),
+              ],
+            ),
           ),
-          _buildDrawerItem(
-            Icons.assignment_ind,
-            'Asignar Cursos Área',
-            () => _navigate(const AssignAreaCoursesScreen()),
-            drawerTextColor,
+
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Divider(),
+                _buildDrawerItem(
+                  Icons.logout,
+                  'Cerrar Sesión',
+                  _logout,
+                  drawerTextColor,
+                ),
+              ],
+            ),
           ),
-          _buildDrawerItem(
-            Icons.group,
-            'Ver Progreso General',
-            () => _navigate(const ManageGlobalProgressScreen()),
-            drawerTextColor,
-          ),
-          _buildDrawerItem(
-            Icons.logout,
-            'Cerrar Sesión',
-            _logout,
-            drawerTextColor,
-          ),
+
         ],
       ),
     );
@@ -1568,12 +1589,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          _buildDrawerItem(
-            Icons.edit,
-            'Administrar Contenido de Área',
-            () => _navigate(const ManageInstructorCoursesScreen()),
-            drawerTextColor,
-          ),
+
           _buildDrawerItem(
             Icons.logout,
             'Cerrar Sesión',
@@ -1642,6 +1658,323 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Drawer _buildnominasDrawer() {
+    final isDarkMode = themeNotifier.value == ThemeMode.dark;
+    final drawerBackground = isDarkMode ? Colors.black : Colors.white;
+    final drawerTextColor = isDarkMode ? Colors.white : Colors.black87;
+
+    return Drawer(
+      backgroundColor: drawerBackground,
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              UserAccountsDrawerHeader(
+                accountName: Text(
+                  currentUser?.displayName ?? 'Área de nóminas 💰',
+                ),
+                accountEmail: Text(currentUser?.email ?? ''),
+                currentAccountPicture: CircleAvatar(
+                  backgroundImage:
+                  currentUser?.photoURL != null
+                      ? NetworkImage(currentUser!.photoURL!)
+                      : const AssetImage('assets/ds.png')
+                  as ImageProvider,
+                ),
+                decoration: const BoxDecoration(color: Colors.blueAccent),
+              ),
+              Positioned(
+                bottom: 8,
+                right: 12,
+                child: IconButton(
+                  icon: const Icon(Icons.settings, color: Colors.white),
+                  tooltip: 'Configuración de Perfil',
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const EditProfileScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                const Divider(),
+                _buildDrawerItem(Icons.home, 'Inicio', () {
+                  setState(() {
+                    _mostrarCursos = false;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+                const Divider(),
+                _buildDrawerItem(Icons.school, 'Capacitaciones', () {
+                  setState(() {
+                    _mostrarCursos = true;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+                const Divider(),
+                _buildDrawerItem(
+                  Icons.history,
+                  'Registros E/S',
+                      () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ResumenChecadasScreen(),
+                    ),
+                  ),
+                  drawerTextColor,
+                ),
+                const Divider(),
+              ],
+            ),
+          ),
+          const Divider(),
+          _buildDrawerItem(
+            Icons.logout,
+            'Cerrar Sesión',
+            _logout,
+            drawerTextColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Drawer _buildIncidenciasDrawer() {
+    final isDarkMode = themeNotifier.value == ThemeMode.dark;
+    final drawerBackground = isDarkMode ? Colors.black : Colors.white;
+    final drawerTextColor = isDarkMode ? Colors.white : Colors.black87;
+
+    return Drawer(
+      backgroundColor: drawerBackground,
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              UserAccountsDrawerHeader(
+                accountName: Text(
+                  currentUser?.displayName ?? 'Área de incidencias 👮‍♂️',
+                ),
+                accountEmail: Text(currentUser?.email ?? ''),
+                currentAccountPicture: CircleAvatar(
+                  backgroundImage:
+                  currentUser?.photoURL != null
+                      ? NetworkImage(currentUser!.photoURL!)
+                      : const AssetImage('assets/ds.png')
+                  as ImageProvider,
+                ),
+                decoration: const BoxDecoration(color: Colors.blueAccent),
+              ),
+              Positioned(
+                bottom: 8,
+                right: 12,
+                child: IconButton(
+                  icon: const Icon(Icons.settings, color: Colors.white),
+                  tooltip: 'Configuración de Perfil',
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const EditProfileScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                const Divider(),
+                _buildDrawerItem(Icons.home, 'Inicio', () {
+                  setState(() {
+                    _mostrarCursos = false;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+                const Divider(),
+                _buildDrawerItem(Icons.school, 'Capacitaciones', () {
+                  setState(() {
+                    _mostrarCursos = true;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+                const Divider(),
+                _buildDrawerItem(
+                  Icons.history,
+                  'Registros E/S',
+                      () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ResumenChecadasScreen(),
+                    ),
+                  ),
+                  drawerTextColor,
+                ),
+              ],
+            ),
+          ),
+          const Divider(),
+          _buildDrawerItem(
+            Icons.accessibility_new_outlined,
+            'Colaboradores',
+                () => _navigate(const empleadosScreen()),
+            drawerTextColor,
+          ),
+          _buildDrawerItem(
+            Icons.logout,
+            'Cerrar Sesión',
+            _logout,
+            drawerTextColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Drawer _buildCapacitacionesDrawer() {
+    final isDarkMode = themeNotifier.value == ThemeMode.dark;
+    final drawerBackground = isDarkMode ? Colors.black : Colors.white;
+    final drawerTextColor = isDarkMode ? Colors.white : Colors.black87;
+
+    return Drawer(
+      backgroundColor: drawerBackground,
+      child: Column(
+        children: [Stack(
+          children: [
+            UserAccountsDrawerHeader(
+              accountName: Text(
+                currentUser?.displayName ?? 'Área de capacitaciones 👨‍🏫',
+              ),
+              accountEmail: Text(currentUser?.email ?? ''),
+              currentAccountPicture: CircleAvatar(
+                backgroundImage:
+                currentUser?.photoURL != null
+                    ? NetworkImage(currentUser!.photoURL!)
+                    : const AssetImage('assets/ds.png')
+                as ImageProvider,
+              ),
+              decoration: const BoxDecoration(color: Colors.blueAccent),
+            ),
+            Positioned(
+              bottom: 8,
+              right: 12,
+              child: IconButton(
+                icon: const Icon(Icons.settings, color: Colors.white),
+                tooltip: 'Configuración de Perfil',
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EditProfileScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                const Divider(),
+                _buildDrawerItem(Icons.home, 'Inicio', () {
+                  setState(() {
+                    _mostrarCursos = false;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+                const Divider(),
+                _buildDrawerItem(Icons.school, 'Capacitaciones', () {
+                  setState(() {
+                    _mostrarCursos = true;
+                  });
+                  Navigator.pop(context);
+                }, drawerTextColor),
+              ],
+            ),
+          ),
+          const Divider(),
+          ExpansionTile(
+            leading: Icon(Icons.school, color: drawerTextColor),
+            title: Text(
+              'Configuración de Capacitaciones',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: drawerTextColor,
+              ),
+            ),
+            collapsedIconColor: drawerTextColor,
+            iconColor: drawerTextColor,
+            children: [
+              _buildDrawerItem(
+                Icons.manage_accounts,
+                'Administrar áreas',
+                    () => _navigate(const ManageAreasAndCoursesScreen()),
+                drawerTextColor,
+              ),
+              _buildDrawerItem(
+                Icons.video_collection,
+                'Contenido de cursos',
+                    () => _navigate(const AdminResourcesScreen()),
+                drawerTextColor,
+              ),
+              _buildDrawerItem(
+                Icons.settings_accessibility,
+                'Acceso a cursos',
+                    () => _navigate(const ManageCourseAccessScreen()),
+                drawerTextColor,
+              ),
+              _buildDrawerItem(
+                Icons.edit_document,
+                'Administrar exámenes',
+                    () => _navigate(const AdminExamManagerScreen()),
+                drawerTextColor,
+              ),
+              _buildDrawerItem(
+                Icons.assignment,
+                'Resultados de exámenes',
+                    () => _navigate(const ExamResultsScreen()),
+                drawerTextColor,
+              ),
+              _buildDrawerItem(
+                Icons.group,
+                'Progreso general',
+                    () => _navigate(const GlobalProgressScreen()),
+                drawerTextColor,
+              ),
+              _buildDrawerItem(
+                Icons.description,
+                'Kardex',
+                    () => _navigate(const CardexScreen()),
+                drawerTextColor,
+              ),
+            ],
+          ),
+          _buildDrawerItem(
+            Icons.logout,
+            'Cerrar Sesión',
+            _logout,
+            drawerTextColor,
+          ),
+        ],
+      ),
+    );
+  }
+
   ListTile _buildDrawerItem(
     IconData icon,
     String title,
@@ -1658,3 +1991,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+

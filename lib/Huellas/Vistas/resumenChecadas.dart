@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' as io;
+import 'package:dashapp/Capacitaciones/services/theme_notifier.dart';
 import 'package:dashapp/Huellas/Vistas/EditarRegistroScreen.dart';
 import 'package:excel/excel.dart';
 import 'package:flutter/foundation.dart';
@@ -118,7 +119,7 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
     mapaTituloANomina.clear();
 
     // Cargar usuarios
-    final usuariosSnap = await FirebaseFirestore.instance.collection('Usuarios').get();
+    final usuariosSnap = await FirebaseFirestore.instance.collection('UsuariosDcc').get();
 
     for (final doc in usuariosSnap.docs) {
       final data = doc.data();
@@ -534,19 +535,6 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -571,6 +559,20 @@ class _ResumenChecadasScreenState extends State<ResumenChecadasScreen> {
           IconButton(
             icon: const Icon(Icons.download, color: Colors.white),
             onPressed: _exportarAExcel,
+          ),
+          IconButton(
+            icon: Icon(
+              themeNotifier.value == ThemeMode.dark
+                  ? Icons.wb_sunny_outlined
+                  : Icons.nightlight_round,
+            ),
+            onPressed: () {
+              themeNotifier.value =
+              themeNotifier.value == ThemeMode.dark
+                  ? ThemeMode.light
+                  : ThemeMode.dark;
+              setState(() {});
+            },
           ),
         ],
       ),

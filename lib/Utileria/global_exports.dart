@@ -15,7 +15,6 @@ export 'package:dashapp/Capacitaciones/services/Kardex_screen.dart';
 export 'package:dashapp/Capacitaciones/services/theme_notifier.dart';
 
 // Cursos, exámenes y administración
-export 'package:dashapp/Capacitaciones/screens/Instructor/ManageInstructorCoursesScreen.dart';
 export 'package:dashapp/Capacitaciones/screens/ManageAreasAndCoursesScreen.dart';
 export 'package:dashapp/Capacitaciones/screens/admin/Examen_Result.dart';
 export 'package:dashapp/Capacitaciones/screens/admin/ManageCourseByPerson.dart';
@@ -26,7 +25,6 @@ export 'package:dashapp/Capacitaciones/screens/admin/global_progress_screen.dart
 
 // Cursos por área y asignaciones
 export 'package:dashapp/Capacitaciones/screens/courses_by_area.dart';
-export 'package:dashapp/Capacitaciones/screens/manager/assign_area_courses_screen.dart';
 
 // Login
 export 'package:dashapp/Capacitaciones/screens/login_screen.dart';
@@ -36,3 +34,17 @@ export 'package:dashapp/Huellas/Controlador/ConfiguracionSubidasScreen.dart';
 export 'package:dashapp/Huellas/Vistas/reloj_Entradas.dart';
 export 'package:dashapp/Huellas/Vistas/reloj_Salidas.dart';
 export 'package:dashapp/Huellas/Vistas/resumenChecadas.dart';
+
+
+
+export 'package:dashapp/General/vista/agregar%20foto%20por%20usuario.dart';
+export 'package:dashapp/General/vista/agregar_Noticias.dart';
+export 'package:dashapp/General/vista/agregar_eventos.dart';
+export 'package:dashapp/General/vista/empleados_Dcc.dart';
+export 'package:dashapp/General/vista/galeria_Eventos.dart';
+export 'package:dashapp/Huellas/Vistas/editarCarrusel.dart';
+export 'package:dashapp/Utileria/global_exports.dart';
+
+export 'package:carousel_slider/carousel_slider.dart';
+
+export 'package:flutter/foundation.dart' show kIsWeb;
