@@ -106,11 +106,10 @@ class _RelojCOMState extends State<RelojCOM> {
     }
 
     if (dia >= 1 && dia <= 4) {
-      // Lunes a jueves: salidas de planta + comedor
-      return (hora >= 6 && hora < 8) || // planta
-          (hora >= 18 && hora < 20) || // planta
-          (hora >= 10 && hora < 16) || // comedor
-          (hora >= 22 || hora < 4);    // comedor nocturno
+      return (hora >= 6 && hora < 8) ||
+          (hora >= 18 && hora < 20) ||
+          (hora >= 10 && hora < 16) ||
+          (hora >= 22 || hora < 4);
     }
 
     return false;

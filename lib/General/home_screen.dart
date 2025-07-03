@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:dashapp/Capacitaciones/screens/manager/checadas.dart';
 import 'package:dashapp/Utileria/global_exports.dart';
 
 import 'package:intl/intl.dart';
@@ -1512,14 +1513,87 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildDrawerItem(
                   Icons.history,
                   'Registros E/S del equipo',
-                      () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ResumenChecadasScreen(),
-                    ),
-                  ),
+                      () async {
+                    try {
+                      final uid = FirebaseAuth.instance.currentUser?.uid;
+                      if (uid == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No se pudo obtener el usuario actual')),
+                        );
+                        return;
+                      }
+
+                      // Paso 1: Obtener documento desde 'users'
+                      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+                      if (!userDoc.exists) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Usuario no encontrado en "users"')),
+                        );
+                        return;
+                      }
+
+                      final userData = userDoc.data();
+                      final nominaStr = userData?['nomina']?.toString();
+                      //convertir nominaStr a int
+                      final nomina = int.tryParse(nominaStr ?? '');
+
+                      if (nominaStr == null || nominaStr.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No se encontró tu número de nómina')),
+                        );
+                        return;
+                      }
+
+                      // ✅ Convertir a int para buscar en UsuariosDcc
+                      final nominaInt = int.tryParse(nominaStr);
+                      if (nominaInt == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Tu número de nómina no es válido')),
+                        );
+                        return;
+                      }
+
+                      // Paso 2: Buscar en 'UsuariosDcc' por 'no' como int
+                      final query = await FirebaseFirestore.instance
+                          .collection('UsuariosDcc')
+                          .where('no', isEqualTo: nominaInt)
+                          .limit(1)
+                          .get();
+
+                      if (query.docs.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No se encontró tu registro en UsuariosDcc')),
+                        );
+                        return;
+                      }
+
+                      final data = query.docs.first.data();
+                      final jefe = data['jefe'];
+
+                      if (jefe != 1) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No tienes permisos como jefe')),
+                        );
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ResumenChecadasJefeScreen(nominaJefe: nominaInt),
+                        ),
+                      );
+                    } catch (e) {
+                      debugPrint('❌ Error validando jefe: $e');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Ocurrió un error al validar el rol de jefe')),
+                      );
+                    }
+                  },
                   drawerTextColor,
                 ),
+
+
                 const Divider(),
               ],
             ),

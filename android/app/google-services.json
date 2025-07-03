@@ -1,124 +1,26 @@
 {
   "project_info": {
-    "project_number": "1097935473525",
-    "firebase_url": "https://capacitaciones-1adfd-default-rtdb.firebaseio.com",
-    "project_id": "capacitaciones-1adfd",
-    "storage_bucket": "capacitaciones-1adfd.firebasestorage.app"
+    "project_number": "45147920639",
+    "project_id": "dashapp-69a70",
+    "storage_bucket": "dashapp-69a70.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1097935473525:android:96fad1836a1e3de3dd213c",
-        "android_client_info": {
-          "package_name": "com.example.capacitaciones"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "1097935473525-5bu013kbhuv1gplevq374vvaf8bss0f9.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.capacitaciones",
-            "certificate_hash": "3ab7053cef7aa88dd2887eb90243dfdd75b0ad15"
-          }
-        },
-        {
-          "client_id": "1097935473525-naqco4du80duib0tnnhurg47ukp3j1j7.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDF9KhjzisvmE-NBraR6svcY_QYmGupRcg"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "1097935473525-naqco4du80duib0tnnhurg47ukp3j1j7.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "1097935473525-bm8pmcjs3e95dag55fr09npfidit2gs2.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.app"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:1097935473525:android:53a5235fdd02364bdd213c",
+        "mobilesdk_app_id": "1:45147920639:android:a86557006569e13cc7d4ca",
         "android_client_info": {
           "package_name": "com.example.dashapp"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "1097935473525-naqco4du80duib0tnnhurg47ukp3j1j7.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDF9KhjzisvmE-NBraR6svcY_QYmGupRcg"
+          "current_key": "AIzaSyB_ZyBxl4PiOjHWx-Mhs8isjRxmJy7bH8Q"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "1097935473525-naqco4du80duib0tnnhurg47ukp3j1j7.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "1097935473525-bm8pmcjs3e95dag55fr09npfidit2gs2.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.app"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:1097935473525:android:797c366d5e23cf4ddd213c",
-        "android_client_info": {
-          "package_name": "com.example.myapp"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "1097935473525-naqco4du80duib0tnnhurg47ukp3j1j7.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDF9KhjzisvmE-NBraR6svcY_QYmGupRcg"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "1097935473525-naqco4du80duib0tnnhurg47ukp3j1j7.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "1097935473525-bm8pmcjs3e95dag55fr09npfidit2gs2.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.app"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
