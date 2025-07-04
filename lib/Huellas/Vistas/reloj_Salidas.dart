@@ -96,15 +96,16 @@ class _RelojCOMState extends State<RelojCOM> {
             (dia == 1 && hora < 4); // lunes antes de 4 a.m.
 
     if (enPeriodoSoloPlanta) {
-      // Solo se permiten horarios de planta durante este periodo
+      // Para los fines de semana y viernes después de las 7 p.m.
       return (hora >= 6 && hora < 8) || (hora >= 16 && hora < 20);
     }
 
     if (dia == 5) {
-      // Viernes: salida de 4:00 p.m. a 7:00 p.m. únicamente
-      return (hora >= 16 && hora < 19) || (hora >= 10 && hora < 16);
+      // Viernes: salida de 6:00 a.m a 8:00 a.m y de 4:00 p.m. a 7:00 p.m. únicamente este dia
+      return (hora >= 16 && hora < 19) || (hora >= 10 && hora < 16) ||
+          (hora >= 6 || hora < 8);
     }
-
+      //De lunes a jueves
     if (dia >= 1 && dia <= 4) {
       return (hora >= 6 && hora < 8) ||
           (hora >= 18 && hora < 20) ||
@@ -118,7 +119,7 @@ class _RelojCOMState extends State<RelojCOM> {
   String _obtenerTipoSalida() {
     if (_tipoForzado != null) return _tipoForzado!;
     final hora = DateTime.now().hour;
-    //Agregar condicion de viernes y fin de semana
+
     if ((hora >= 6 && hora < 8) || (hora >= 16 && hora < 20)) {
       return 'salida_planta';
     } else {

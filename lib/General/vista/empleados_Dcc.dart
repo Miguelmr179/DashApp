@@ -2,6 +2,7 @@ import 'package:dashapp/Capacitaciones/screens/admin/admin_manage_users_screen.d
 import 'package:dashapp/General/modelo/empleados.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 
 class empleadosScreen extends StatefulWidget {
@@ -31,11 +32,11 @@ class _empleadosScreenState extends State<empleadosScreen> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     final campos = [
-      'CP', 'titulo', 'antiguedad', 'apellidos', 'beneficiario', 'calle', 'coloniaComunidad',
-      'comunidad', 'contratoInd', 'curp', 'departamento', 'domicilio', 'edad', 'edoCivil',
-      'email', 'escolaridad', 'emailEmpresa', 'fechaIng', 'fechaNac', 'genero', 'foto',
+      'CP', 'antiguedad', 'apellidos', 'beneficiario', 'calle', 'colonia/Comunidad',
+      'comunidad', 'contrato ind', 'curp', 'departamento', 'domicilio', 'edad', 'edo Civil',
+      'email', 'escolaridad', 'emailEmpresa', 'fechaIng', 'fechaNac', 'genero',
       'jefe', 'municipio', 'no', 'nombre', 'ns', 'parentesco', 'parentesco2', 'porcentaje',
-      'privilegio', 'puesto', 'reporta', 'rfc', 'salario', 'telefono1', 'telefono2', 'tipo', 'vacaciones',
+      'privilegio', 'puesto', 'reporta', 'rfc', 'salario', 'telefono 1', 'telefono 2', 'tipo', 'vacaciones',
     ];
 
 
@@ -51,31 +52,97 @@ class _empleadosScreenState extends State<empleadosScreen> {
 
     };
 
+    List<TableRow> _buildFilas(BuildContext context, List<String> campos) {
+      List<TableRow> filas = [];
+      for (int i = 0; i < campos.length; i += 3) {
+        final filaCampos = campos.sublist(i, (i + 3) > campos.length ? campos.length : i + 3);
+
+        filas.add(
+          TableRow(
+            children: List.generate(3, (index) {
+              if (index < filaCampos.length) {
+                final campo = filaCampos[index];
+                final isFechaIng = campo == 'fechaIng';
+                final isFechaNac = campo == 'fechaNac';
+
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: GestureDetector(
+                    onTap: (isFechaIng || isFechaNac)
+                        ? () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime(1900),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        final formatted = isFechaIng
+                            ? DateFormat('dd/MM/yyyy').format(picked)
+                            : DateFormat('yyyy-MM-dd').format(picked);
+                        controllers[campo]!.text = formatted;
+                      }
+                    }
+                        : null,
+                    child: AbsorbPointer(
+                      absorbing: isFechaIng || isFechaNac,
+                      child: TextField(
+                        controller: controllers[campo],
+                        decoration: InputDecoration(
+                          labelText: campo,
+                          filled: true,
+                          fillColor: isDarkMode ? Colors.grey[850] : Colors.grey[100],
+                          labelStyle: TextStyle(
+                            color: isDarkMode ? Colors.white70 : Colors.grey[700],
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.indigo.shade300, width: 2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.grey.shade400),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
+                      ),
+                    ),
+                  ),
+                );
+              } else {
+                return const SizedBox(); // Celda vacía si no hay campo
+              }
+            }),
+          ),
+        );
+      }
+      return filas;
+    }
 
     void _crearUsuarioDesdeControles() {
       final nuevo = Usuario(
         CP: int.tryParse(controllers['CP']!.text) ?? 0,
         id: usuario?.id ?? controllers['no']!.text,
-        titulo: controllers['titulo']!.text,
+        titulo: '1',
         antiguedad: int.tryParse(controllers['antiguedad']!.text) ?? 0,
         apellidos: controllers['apellidos']!.text,
         beneficiario: controllers['beneficiario']!.text,
         calle: controllers['calle']!.text,
-        coloniaComunidad: controllers['coloniaComunidad']!.text,
+        coloniaComunidad: controllers['colonia/Comunidad']!.text,
         comunidad: controllers['comunidad']!.text,
-        contratoInd: controllers['contratoInd']!.text,
+        contratoInd: controllers['contrato ind']!.text,
         curp: controllers['curp']!.text,
         departamento: controllers['departamento']!.text,
         domicilio: controllers['domicilio']!.text,
         edad: int.tryParse(controllers['edad']!.text) ?? 0,
-        edoCivil: controllers['edoCivil']!.text,
+        edoCivil: controllers['edo Civil']!.text,
         email: controllers['email']!.text,
         escolaridad: controllers['escolaridad']!.text,
         emailEmpresa: controllers['emailEmpresa']!.text,
         fechaIng: controllers['fechaIng']!.text,
         fechaNac: controllers['fechaNac']!.text,
         genero: controllers['genero']!.text,
-        foto: controllers['foto']!.text,
+          foto: 'https://cdn-icons-png.flaticon.com/512/1077/1077012.png',
         jefe: int.tryParse(controllers['jefe']!.text) ?? 0,
         municipio: controllers['municipio']!.text,
         no: int.tryParse(controllers['no']!.text) ?? 0,
@@ -89,8 +156,8 @@ class _empleadosScreenState extends State<empleadosScreen> {
         reporta: int.tryParse(controllers['reporta']!.text) ?? 0,
         rfc: controllers['rfc']!.text,
         salario: int.tryParse(controllers['salario']!.text) ?? 0,
-        telefono1: int.tryParse(controllers['telefono1']!.text) ?? 0,
-        telefono2: int.tryParse(controllers['telefono2']!.text) ?? 0,
+        telefono1: int.tryParse(controllers['telefono 1']!.text) ?? 0,
+        telefono2: int.tryParse(controllers['telefono 2']!.text) ?? 0,
         tipo: controllers['tipo']!.text,
         vacaciones: controllers['vacaciones']!.text,
       );
@@ -103,43 +170,161 @@ class _empleadosScreenState extends State<empleadosScreen> {
       Navigator.pop(context);
     }
 
-
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        title: Text(
-          usuario == null ? 'Nuevo Usuario' : 'Editar Usuario',
-          style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            children: campos.map((campo) => TextField(
-              controller: controllers[campo],
-              style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-              decoration: InputDecoration(
-                labelText: campo,
-                labelStyle: TextStyle(color: isDarkMode ? Colors.white70 : Colors.grey[800]),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: isDarkMode ? Colors.white24 : Colors.grey),
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 900,
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
+              ),
+              child: Material(
+                borderRadius: BorderRadius.circular(24),
+                color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                      child: Text(
+                        usuario == null ? 'Nuevo Usuario' : 'Editar Usuario',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                Expanded(
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Table(
+                        columnWidths: const {
+                          0: FlexColumnWidth(1),
+                          1: FlexColumnWidth(1),
+                          2: FlexColumnWidth(1),
+                        },
+                        children: [
+
+                          /// 🧍 Datos personales
+                          const TableRow(children: [
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: Text('🧍 Datos personales', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            ),
+                            SizedBox(),
+                            SizedBox(),
+                          ]),
+                          ..._buildFilas(context, ['nombre', 'apellidos', 'curp']),
+                          ..._buildFilas(context, ['rfc', 'fechaNac', 'edad']),
+                          ..._buildFilas(context, ['genero', 'edo Civil', 'escolaridad']),
+                          ..._buildFilas(context, ['parentesco', 'parentesco2', 'beneficiario']),
+
+                          /// 📞 Contacto
+                          const TableRow(children: [
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: Text('📞 Contacto', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            ),
+                            SizedBox(),
+                            SizedBox(),
+                          ]),
+                          ..._buildFilas(context, ['email', 'emailEmpresa', 'telefono 1']),
+                          ..._buildFilas(context, ['telefono 2']),
+
+                          /// 🏡 Dirección
+                          const TableRow(children: [
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: Text('🏡 Dirección', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            ),
+                            SizedBox(),
+                            SizedBox(),
+                          ]),
+                          ..._buildFilas(context, ['calle', 'colonia/Comunidad', 'comunidad']),
+                          ..._buildFilas(context, ['municipio', 'CP', 'domicilio']),
+
+                          /// 💼 Información laboral
+                          const TableRow(children: [
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: Text('💼 Información laboral', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            ),
+                            SizedBox(),
+                            SizedBox(),
+                          ]),
+                          ..._buildFilas(context, ['puesto', 'departamento', 'fechaIng']),
+                          ..._buildFilas(context, ['antiguedad', 'contrato ind', 'vacaciones']),
+                          ..._buildFilas(context, ['tipo', 'salario']),
+
+                          /// 🏢 Empresa y jerarquía
+                          const TableRow(children: [
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: Text('🏢 Empresa y jerarquía', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            ),
+                            SizedBox(),
+                            SizedBox(),
+                          ]),
+                          ..._buildFilas(context, ['no', 'privilegio', 'jefe']),
+                          ..._buildFilas(context, ['reporta', 'ns', 'porcentaje']),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton.icon(
+                            icon: const Icon(Icons.cancel_outlined),
+                            label: const Text('Cancelar'),
+                            onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.redAccent,
+                              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.save),
+                            label: const Text('Guardar'),
+                            onPressed: _crearUsuarioDesdeControles,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            )).toList(),
-          ),
+            );
+          },
+
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: _crearUsuarioDesdeControles,
-            child: const Text('Guardar'),
-          ),
-        ],
       ),
     );
+
   }
+
 
 
   @override
@@ -298,4 +483,6 @@ class _empleadosScreenState extends State<empleadosScreen> {
     );
   }
 
+
 }
+
